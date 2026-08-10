@@ -5,6 +5,7 @@ import 'package:ebazarx/core/utils/responsive.dart';
 import 'package:ebazarx/features/order/domain/entities/order_entity.dart';
 import 'package:ebazarx/features/order/domain/entities/order_item_entity.dart';
 import 'package:ebazarx/features/order/domain/entities/order_status.dart';
+import 'package:ebazarx/features/order/domain/entities/payment_method.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -282,6 +283,8 @@ class _OrderInfoCard extends StatelessWidget {
         return 'Failed';
       case PaymentStatus.refunded:
         return 'Refunded';
+      case PaymentStatus.processing:
+        return "Processing";
     }
   }
 

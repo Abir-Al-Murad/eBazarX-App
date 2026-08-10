@@ -7,6 +7,7 @@ import 'package:ebazarx/core/utils/app_snackbar.dart';
 import 'package:ebazarx/core/utils/responsive.dart';
 import 'package:ebazarx/features/order/domain/entities/order_entity.dart';
 import 'package:ebazarx/features/order/domain/entities/order_status.dart';
+import 'package:ebazarx/features/order/domain/entities/payment_method.dart';
 import 'package:ebazarx/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -710,6 +711,8 @@ class _PaymentChip extends StatelessWidget {
         return AppColors.error;
       case PaymentStatus.refunded:
         return Colors.grey;
+        case PaymentStatus.processing:
+          return AppColors.primary;
     }
   }
 

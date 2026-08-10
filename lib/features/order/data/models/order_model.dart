@@ -1,31 +1,31 @@
-import '../../domain/entities/order_entity.dart';
-import '../../domain/entities/order_status.dart';
+import 'package:ebazarx/features/order/domain/entities/order_entity.dart';
+import 'package:ebazarx/features/order/domain/entities/order_status.dart';
+import 'package:ebazarx/features/order/domain/entities/payment_method.dart';
 import 'order_item_model.dart';
 
 class OrderModel {
   final String id;
   final String userId;
   final String addressId;
-
   final double subtotal;
   final double shippingFee;
   final double tax;
   final double discountAmount;
   final double grandTotal;
-
   final String? paymentMethod;
   final PaymentStatus paymentStatus;
   final OrderStatus orderStatus;
-
   final String? trackingNumber;
   final DateTime? estimatedDelivery;
   final String? notes;
   final String? couponId;
-
   final DateTime createdAt;
   final DateTime updatedAt;
-
   final List<OrderItemModel> items;
+
+  // Stripe specific fields
+  final String? clientSecret;
+  final String? paymentIntentId;
 
   const OrderModel({
     required this.id,
@@ -46,6 +46,8 @@ class OrderModel {
     required this.createdAt,
     required this.updatedAt,
     this.items = const [],
+    this.clientSecret,
+    this.paymentIntentId,
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
@@ -76,6 +78,8 @@ class OrderModel {
       items: (json['items'] as List<dynamic>? ?? [])
           .map((e) => OrderItemModel.fromJson(e))
           .toList(),
+      clientSecret: json['client_secret'],
+      paymentIntentId: json['payment_intent_id'],
     );
   }
 
@@ -98,9 +102,9 @@ class OrderModel {
       couponId: entity.couponId,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
-      items: entity.items
-          .map(OrderItemModel.fromEntity)
-          .toList(),
+      items: entity.items.map((e) => OrderItemModel.fromEntity(e)).toList(),
+      clientSecret: entity.clientSecret,
+      paymentIntentId: entity.paymentIntentId,
     );
   }
 
@@ -124,6 +128,8 @@ class OrderModel {
       createdAt: createdAt,
       updatedAt: updatedAt,
       items: items.map((e) => e.toEntity()).toList(),
+      clientSecret: clientSecret,
+      paymentIntentId: paymentIntentId,
     );
   }
 
@@ -146,5 +152,7 @@ class OrderModel {
     'created_at': createdAt.toIso8601String(),
     'updated_at': updatedAt.toIso8601String(),
     'items': items.map((e) => e.toJson()).toList(),
+    'client_secret': clientSecret,
+    'payment_intent_id': paymentIntentId,
   };
 }

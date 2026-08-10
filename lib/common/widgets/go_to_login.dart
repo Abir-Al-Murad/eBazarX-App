@@ -113,7 +113,7 @@ class GoToLogIn extends ConsumerWidget  {
                     // Glassmorphic Login Button
                     SizedBox(
                       width: double.infinity,
-                      height: 40,
+                      height: 50,
                       child: ElevatedButton.icon(
                         onPressed: ()async{
                          final result = await context.pushNamed(AppRoutesName.login);

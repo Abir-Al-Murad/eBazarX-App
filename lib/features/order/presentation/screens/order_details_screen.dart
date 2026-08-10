@@ -3,6 +3,7 @@ import 'package:ebazarx/core/utils/responsive.dart';
 import 'package:ebazarx/features/order/domain/entities/order_entity.dart';
 import 'package:ebazarx/features/order/domain/entities/order_item_entity.dart';
 import 'package:ebazarx/features/order/domain/entities/order_status.dart';
+import 'package:ebazarx/features/order/domain/entities/payment_method.dart';
 import 'package:ebazarx/features/order/presentation/providers/order_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -262,7 +263,7 @@ class _OrderInfoCard extends StatelessWidget {
             value,
             style: TextStyle(
               fontWeight: bold ? FontWeight.bold : FontWeight.normal,
-              color: color ?? Colors.black87,
+              color: color,
               fontSize: 14,
             ),
           ),
@@ -281,6 +282,8 @@ class _OrderInfoCard extends StatelessWidget {
         return 'Failed';
       case PaymentStatus.refunded:
         return 'Refunded';
+        case PaymentStatus.processing:
+        return "Processing";
     }
   }
 

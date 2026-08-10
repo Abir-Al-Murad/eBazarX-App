@@ -1,5 +1,5 @@
-import '../../domain/entities/order_item_entity.dart';
-import '../../domain/entities/order_status.dart';
+import 'package:ebazarx/features/order/domain/entities/order_item_entity.dart';
+import 'package:ebazarx/features/order/domain/entities/order_status.dart';
 
 class OrderItemModel {
   final String id;
@@ -17,11 +17,11 @@ class OrderItemModel {
   const OrderItemModel({
     required this.id,
     required this.productNameAtTime,
+    this.productImageAtTime,
     required this.priceAtTime,
     required this.quantity,
     this.sizeAtTime,
     this.colorAtTime,
-    this.productImageAtTime,
     required this.status,
     required this.productId,
     required this.variantId,
@@ -30,17 +30,19 @@ class OrderItemModel {
 
   factory OrderItemModel.fromJson(Map<String, dynamic> json) {
     return OrderItemModel(
-      id: json['id'],
-      productNameAtTime: json['product_name_at_time'],
-      productImageAtTime: json['product_image_at_time'],
+      id: json['id'] as String,
+      productNameAtTime: json['product_name_at_time'] as String,
+      productImageAtTime: json['product_image_at_time'] as String?,
       priceAtTime: double.parse(json['price_at_time'].toString()),
       quantity: int.parse(json['quantity'].toString()),
-      sizeAtTime: json['size_at_time'],
-      colorAtTime: json['color_at_time'],
-      status: OrderStatus.values.byName(json['status'].toString().toLowerCase()),
-      productId: json['product_id'],
-      variantId: json['variant_id'],
-      sellerId: json['seller_id'],
+      sizeAtTime: json['size_at_time'] as String?,
+      colorAtTime: json['color_at_time'] as String?,
+      status: OrderStatus.values.byName(
+        json['status'].toString().toLowerCase(),
+      ),
+      productId: json['product_id'] as String,
+      variantId: json['variant_id'] as String,
+      sellerId: json['seller_id'] as String,
     );
   }
 
@@ -76,17 +78,19 @@ class OrderItemModel {
     );
   }
 
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'product_name_at_time': productNameAtTime,
-    'price_at_time': priceAtTime,
-    'product_image_at_time': productImageAtTime,
-    'quantity': quantity,
-    'size_at_time': sizeAtTime,
-    'color_at_time': colorAtTime,
-    'status': status.name,
-    'product_id': productId,
-    'variant_id': variantId,
-    'seller_id': sellerId,
-  };
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'product_name_at_time': productNameAtTime,
+      'product_image_at_time': productImageAtTime,
+      'price_at_time': priceAtTime,
+      'quantity': quantity,
+      'size_at_time': sizeAtTime,
+      'color_at_time': colorAtTime,
+      'status': status.name,
+      'product_id': productId,
+      'variant_id': variantId,
+      'seller_id': sellerId,
+    };
+  }
 }

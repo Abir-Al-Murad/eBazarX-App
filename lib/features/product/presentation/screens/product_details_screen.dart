@@ -1,4 +1,6 @@
 import 'package:ebazarx/app/app_routes_name.dart';
+import 'package:ebazarx/core/services/auth_storage.dart';
+import 'package:ebazarx/core/utils/app_snackbar.dart';
 import 'package:ebazarx/features/cart/presentation/providers/cart_providers.dart';
 import 'package:ebazarx/features/product/presentation/providers/product_providers.dart';
 import 'package:ebazarx/features/product/presentation/widgets/product_details_shimmer.dart';
@@ -209,6 +211,11 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
         productId: widget.productId,
         variantId: activeVariantId!,
         onAddToCart: () async{
+          print(AuthStorage.accessToken);
+          if(AuthStorage.accessToken == null){
+            AppSnackBar.info(context: context,"Please login to add to cart");
+            return;
+          }
           await ref.read(cartNotifierProvider.notifier).addToCart(
             variantId: ref.read(productDetailsNotifierProvider)
                 .selectedVariant?.id ??
@@ -226,6 +233,10 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
           }
         },
         onBuyNow: () {
+          if(AuthStorage.accessToken == null){
+            AppSnackBar.info(context: context,"Please login to buy now");
+            return;
+          }
           context.pushNamed(AppRoutesName.checkout);
         },
       ),

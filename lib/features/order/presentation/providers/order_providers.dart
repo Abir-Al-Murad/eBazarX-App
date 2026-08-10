@@ -14,19 +14,25 @@ import 'package:ebazarx/features/order/presentation/states/order_list_state.dart
 import 'package:ebazarx/features/order/presentation/states/order_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Data Source
+// ============================================================
+// Data Source
+// ============================================================
 
 final orderRemoteDataSourceProvider = Provider<OrderRemoteDataSource>((ref) {
   return OrderRemoteDataSource(ref.read(apiClientProvider));
 });
 
-/// Repository
+// ============================================================
+// Repository
+// ============================================================
 
 final orderRepositoryProvider = Provider<OrderRepository>((ref) {
   return OrderRepositoryImpl(ref.read(orderRemoteDataSourceProvider));
 });
 
-/// Use Cases
+// ============================================================
+// Use Cases
+// ============================================================
 
 final placeOrderUseCaseProvider = Provider<PlaceOrderUseCase>((ref) {
   return PlaceOrderUseCase(ref.read(orderRepositoryProvider));
@@ -44,24 +50,26 @@ final cancelOrderUseCaseProvider = Provider<CancelOrderUseCase>((ref) {
   return CancelOrderUseCase(ref.read(orderRepositoryProvider));
 });
 
-final getOrderTrackingUseCaseProvider = Provider<GetOrderTrackingUseCase>((
-  ref,
-) {
+final getOrderTrackingUseCaseProvider = Provider<GetOrderTrackingUseCase>((ref) {
   return GetOrderTrackingUseCase(ref.read(orderRepositoryProvider));
 });
 
-
-/// Notifiers
+// ============================================================
+// Notifiers
+// ============================================================
 
 final orderListNotifierProvider =
-    StateNotifierProvider<OrderListNotifier, OrderListState>((ref) {
-      return OrderListNotifier(ref.read(getOrdersUseCaseProvider));
-    });
+StateNotifierProvider<OrderListNotifier, OrderListState>((ref) {
+  return OrderListNotifier(ref.read(getOrdersUseCaseProvider));
+});
 
-final orderNotifierProvider = StateNotifierProvider<OrderNotifier, OrderState>((ref){
+// ✅ Remove confirmPaymentUseCaseProvider and paymentSheetServiceProvider
+// They are no longer needed for SSLCommerz
+
+final orderNotifierProvider = StateNotifierProvider<OrderNotifier, OrderState>((ref) {
   return OrderNotifier(
-    ref.read(placeOrderUseCaseProvider),
-    ref.read(getOrderUseCaseProvider),
-    ref.read(cancelOrderUseCaseProvider),
+    placeOrderUseCase: ref.read(placeOrderUseCaseProvider),
+    getOrderUseCase: ref.read(getOrderUseCaseProvider),
+    cancelOrderUseCase: ref.read(cancelOrderUseCaseProvider),
   );
 });

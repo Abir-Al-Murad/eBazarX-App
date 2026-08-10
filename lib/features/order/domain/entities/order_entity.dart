@@ -1,13 +1,7 @@
+import 'package:ebazarx/features/order/domain/entities/payment_method.dart';
 import 'package:equatable/equatable.dart';
 import 'order_status.dart';
 import 'order_item_entity.dart';
-
-enum PaymentStatus {
-  pending,
-  paid,
-  failed,
-  refunded,
-}
 
 class OrderEntity extends Equatable {
   final String id;
@@ -29,6 +23,10 @@ class OrderEntity extends Equatable {
   final DateTime updatedAt;
   final List<OrderItemEntity> items;
 
+  // Stripe specific fields
+  final String? clientSecret;
+  final String? paymentIntentId;
+
   const OrderEntity({
     required this.id,
     required this.userId,
@@ -48,6 +46,8 @@ class OrderEntity extends Equatable {
     required this.createdAt,
     required this.updatedAt,
     this.items = const [],
+    this.clientSecret,
+    this.paymentIntentId,
   });
 
   @override
@@ -70,6 +70,8 @@ class OrderEntity extends Equatable {
     createdAt,
     updatedAt,
     items,
+    clientSecret,
+    paymentIntentId,
   ];
 
   bool get isCancellable =>
@@ -77,4 +79,51 @@ class OrderEntity extends Equatable {
 
   bool get isDelivered => orderStatus == OrderStatus.delivered;
   bool get isCancelled => orderStatus == OrderStatus.cancelled;
+
+  // CopyWith method
+  OrderEntity copyWith({
+    String? id,
+    String? userId,
+    String? addressId,
+    double? subtotal,
+    double? shippingFee,
+    double? tax,
+    double? discountAmount,
+    double? grandTotal,
+    String? paymentMethod,
+    PaymentStatus? paymentStatus,
+    OrderStatus? orderStatus,
+    String? trackingNumber,
+    DateTime? estimatedDelivery,
+    String? notes,
+    String? couponId,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    List<OrderItemEntity>? items,
+    String? clientSecret,
+    String? paymentIntentId,
+  }) {
+    return OrderEntity(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      addressId: addressId ?? this.addressId,
+      subtotal: subtotal ?? this.subtotal,
+      shippingFee: shippingFee ?? this.shippingFee,
+      tax: tax ?? this.tax,
+      discountAmount: discountAmount ?? this.discountAmount,
+      grandTotal: grandTotal ?? this.grandTotal,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      paymentStatus: paymentStatus ?? this.paymentStatus,
+      orderStatus: orderStatus ?? this.orderStatus,
+      trackingNumber: trackingNumber ?? this.trackingNumber,
+      estimatedDelivery: estimatedDelivery ?? this.estimatedDelivery,
+      notes: notes ?? this.notes,
+      couponId: couponId ?? this.couponId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      items: items ?? this.items,
+      clientSecret: clientSecret ?? this.clientSecret,
+      paymentIntentId: paymentIntentId ?? this.paymentIntentId,
+    );
+  }
 }

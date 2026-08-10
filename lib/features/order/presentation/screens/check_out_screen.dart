@@ -5,6 +5,7 @@ import 'package:ebazarx/features/address/presentation/providers/address_provider
 import 'package:ebazarx/features/cart/presentation/providers/cart_providers.dart';
 import 'package:ebazarx/features/coupon/presentation/providers/coupon_providers.dart';
 import 'package:ebazarx/features/order/domain/entities/checkout_item_entity.dart';
+import 'package:ebazarx/features/order/domain/entities/payment_method.dart';
 import 'package:ebazarx/features/order/presentation/providers/order_providers.dart';
 import 'package:ebazarx/features/profile/presentation/providers/profile_provider.dart';
 import 'package:ebazarx/theme/app_colors.dart';
@@ -32,20 +33,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final TextEditingController noteController = TextEditingController();
   final TextEditingController couponController = TextEditingController();
 
-  String paymentMethod = "Cash on Delivery";
+  PaymentMethod _paymentMethod = PaymentMethod.cod;
   AddressEntity? selectedAddress;
 
-  // Mutable discount (was a getter returning 50 – now properly updatable)
   double _discount = 0.0;
-  // Subtotal is taken from widget, but we store locally for convenience
   late double _subtotal;
 
   static const _paymentOptions = [
-    ("Cash on Delivery", Icons.payments_outlined),
-    ("Online Payment", Icons.credit_card_rounded),
+    (PaymentMethod.cod, 'Cash on Delivery', Icons.payments_outlined),
+    (PaymentMethod.sslcommerz, 'SSLCommerz (bKash/Nagad/Cards)', Icons.credit_card_rounded),
   ];
 
-  // Placeholder shipping & tax – replace with real calculation later
   double get _shipping => 100.0;
   double get _tax => 100.0;
   double get _total => _subtotal + _shipping + _tax - _discount;
@@ -83,13 +81,22 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final couponState = ref.watch(validCouponProvider);
     final theme = Theme.of(context);
 
-    // If couponState changes (e.g., after validation), update discount locally.
-    // This ensures the summary reflects the current coupon even if the user
-    // applies it from another place.
-    final double currentDiscount = couponState.coupon?.discountAmount ?? 0.0;
+    final currentDiscount = couponState.coupon?.discountAmount ?? 0.0;
     if (_discount != currentDiscount) {
       _discount = currentDiscount;
     }
+
+    // ✅ Listen for payment redirect (SSLCommerz)
+    ref.listen(orderNotifierProvider, (prev, next) {
+      if (next.paymentRedirectUrl != null && next.paymentRedirectUrl!.isNotEmpty) {
+        // Open WebView for SSLCommerz
+        context.push('/payment-webview', extra: {
+          'url': next.paymentRedirectUrl!,
+          'orderId': next.order!.id,
+          'paymentId': next.paymentId!,
+        });
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -193,7 +200,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  // ---------------- ADDRESS ----------------
+  // ============================================================
+  // ADDRESS SECTION
+  // ============================================================
 
   Widget _buildAddressSection(
       BuildContext context,
@@ -231,7 +240,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     width: isSelected ? 1.5 : 1,
                   ),
                   color: isSelected
-                      ? theme.colorScheme.primary.withValues(alpha: 0.05)
+                      ? theme.colorScheme.primary.withAlpha(13)
                       : Colors.transparent,
                 ),
                 child: Row(
@@ -269,9 +278,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: theme.colorScheme.primary.withValues(
-                                      alpha: 0.12,
-                                    ),
+                                    color: theme.colorScheme.primary
+                                        .withAlpha(31),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
@@ -316,7 +324,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  // ---------------- PAYMENT ----------------
+  // ============================================================
+  // PAYMENT SECTION
+  // ============================================================
 
   Widget _buildPaymentSection(BuildContext context) {
     final theme = Theme.of(context);
@@ -324,55 +334,79 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     return _SectionCard(
       title: "Payment Method",
       icon: Icons.account_balance_wallet_outlined,
-      child: Wrap(
-        spacing: context.paddingSizeSmall,
-        runSpacing: context.paddingSizeSmall,
+      child: Column(
         children: _paymentOptions.map((option) {
-          final (label, icon) = option;
-          final isSelected = paymentMethod == label;
+          final (method, label, icon) = option;
+          final isSelected = _paymentMethod == method;
 
-          return InkWell(
-            borderRadius: BorderRadius.circular(context.radiusDefault),
-            onTap: () => setState(() => paymentMethod = label),
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: context.paddingSizeDefault,
-                vertical: context.paddingSizeSmall,
-              ),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(context.radiusDefault),
-                border: Border.all(
-                  color: isSelected
-                      ? theme.colorScheme.primary
-                      : theme.dividerColor,
-                  width: isSelected ? 1.5 : 1,
+          return Padding(
+            padding: EdgeInsets.only(bottom: context.paddingSizeSmall),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(context.radiusDefault),
+              onTap: () => setState(() => _paymentMethod = method),
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: context.paddingSizeDefault,
+                  vertical: context.paddingSizeSmall,
                 ),
-                color: isSelected
-                    ? theme.colorScheme.primary.withValues(alpha: 0.08)
-                    : Colors.transparent,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    icon,
-                    size: 18,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(context.radiusDefault),
+                  border: Border.all(
                     color: isSelected
                         ? theme.colorScheme.primary
-                        : theme.hintColor,
+                        : theme.dividerColor,
+                    width: isSelected ? 1.5 : 1,
                   ),
-                  SizedBox(width: context.paddingSizeExtraSmall),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: context.fontSizeSmall,
-                      fontWeight: FontWeight.w600,
+                  color: isSelected
+                      ? theme.colorScheme.primary.withAlpha(20)
+                      : Colors.transparent,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      icon,
+                      size: 20,
                       color: isSelected
                           ? theme.colorScheme.primary
-                          : theme.colorScheme.onSurface,
+                          : theme.hintColor,
                     ),
-                  ),
-                ],
+                    SizedBox(width: context.paddingSizeSmall),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            label,
+                            style: TextStyle(
+                              fontSize: context.fontSizeDefault,
+                              fontWeight: FontWeight.w600,
+                              color: isSelected
+                                  ? theme.colorScheme.primary
+                                  : theme.colorScheme.onSurface,
+                            ),
+                          ),
+                          if (method == PaymentMethod.sslcommerz)
+                            Text(
+                              "Secure payment via SSLCommerz (bKash, Nagad, Rocket, Cards)",
+                              style: TextStyle(
+                                fontSize: context.fontSizeExtraSmall,
+                                color: theme.hintColor,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      isSelected
+                          ? Icons.radio_button_checked_rounded
+                          : Icons.radio_button_off_rounded,
+                      size: 20,
+                      color: isSelected
+                          ? theme.colorScheme.primary
+                          : theme.hintColor,
+                    ),
+                  ],
+                ),
               ),
             ),
           );
@@ -381,7 +415,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  // ---------------- COUPON ----------------
+  // ============================================================
+  // COUPON SECTION
+  // ============================================================
 
   Widget _buildCouponSection(BuildContext context) {
     final theme = Theme.of(context);
@@ -435,16 +471,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               if (!mounted) return;
 
               if (res && couponState.coupon!.valid) {
-                // The coupon state is updated; our build method will pick up the new discount
-                // but we also set it explicitly to trigger UI update.
                 setState(() {
                   _discount = ref.read(validCouponProvider).coupon?.discountAmount ?? 0;
                 });
                 AppSnackBar.success(context: context, "Coupon applied successfully");
-                // Clear the input field after successful apply
                 couponController.clear();
               } else {
-                // Show error from provider, or a generic message
                 final failure = ref.read(validCouponProvider).failure;
                 AppSnackBar.error(
                   context: context,
@@ -465,7 +497,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  // ---------------- SUMMARY ----------------
+  // ============================================================
+  // SUMMARY SECTION
+  // ============================================================
 
   Widget _buildSummarySection(BuildContext context) {
     final theme = Theme.of(context);
@@ -486,9 +520,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             Text(
               label,
               style: TextStyle(
-                fontSize: isTotal
-                    ? context.fontSizeDefault
-                    : context.fontSizeSmall,
+                fontSize: isTotal ? context.fontSizeDefault : context.fontSizeSmall,
                 fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
                 color: isTotal ? theme.colorScheme.onSurface : theme.hintColor,
               ),
@@ -496,9 +528,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             Text(
               value,
               style: TextStyle(
-                fontSize: isTotal
-                    ? context.fontSizeLarge
-                    : context.fontSizeSmall,
+                fontSize: isTotal ? context.fontSizeLarge : context.fontSizeSmall,
                 fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
                 color: valueColor ?? theme.colorScheme.onSurface,
               ),
@@ -528,7 +558,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  // ---------------- NOTE ----------------
+  // ============================================================
+  // NOTE SECTION
+  // ============================================================
 
   Widget _buildNoteSection(BuildContext context) {
     final theme = Theme.of(context);
@@ -553,7 +585,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  // ---------------- PLACE ORDER BAR ----------------
+  // ============================================================
+  // PLACE ORDER BAR
+  // ============================================================
 
   Widget _buildPlaceOrderBar(
       BuildContext context,
@@ -564,7 +598,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       }) {
     final theme = Theme.of(context);
 
-    // Determine if we can place order
     final canPlace = !orderState.isLoading &&
         selectedAddress != null &&
         profileState.profile != null;
@@ -575,34 +608,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       child: FilledButton(
         onPressed: canPlace
             ? () async {
-          final coupon = ref.read(validCouponProvider).coupon;
-
-          final success = await ref.read(orderNotifierProvider.notifier).placeOrder(
-            addressId: selectedAddress!.id,
-            items: widget.items,
-            couponCode: coupon?.id,
-            notes: noteController.text.trim(),
-          );
-
-          if (!mounted) return;
-
-          if (success) {
-            if (widget.fromCart) {
-              await ref.read(cartNotifierProvider.notifier).clearCart();
-            }
-            AppSnackBar.success(
-              context:context,
-              "Order placed successfully",
-            );
-            ref.read(orderListNotifierProvider.notifier).loadOrders();
-            context.pop();
-            // TODO: Navigate to order success screen
-            // context.goNamed(AppRoutesName.orderSuccess);
+          if (_paymentMethod == PaymentMethod.sslcommerz) {
+            await _handleSslCommerzCheckout();
           } else {
-            final failure =
-                ref.read(orderNotifierProvider).failure?.message ??
-                    "Failed to place order";
-            AppSnackBar.error(context:context, failure);
+            await _handleCodCheckout();
           }
         }
             : null,
@@ -641,9 +650,67 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       child: SafeArea(top: false, child: button),
     );
   }
+
+  // ============================================================
+  // PAYMENT HANDLERS
+  // ============================================================
+
+  Future<void> _handleCodCheckout() async {
+    final coupon = ref.read(validCouponProvider).coupon;
+
+    final success = await ref.read(orderNotifierProvider.notifier).placeOrder(
+      addressId: selectedAddress!.id,
+      items: widget.items,
+      couponCode: coupon?.id,
+      notes: noteController.text.trim(),
+    );
+
+    if (!mounted) return;
+
+    if (success) {
+      if (widget.fromCart) {
+        await ref.read(cartNotifierProvider.notifier).clearCart();
+      }
+      AppSnackBar.success(context: context, "Order placed successfully");
+      ref.read(orderListNotifierProvider.notifier).loadOrders();
+      context.pop();
+      // TODO: Navigate to order success screen
+    } else {
+      final failure = ref.read(orderNotifierProvider).failure?.message ??
+          "Failed to place order";
+      AppSnackBar.error(context: context, failure);
+    }
+  }
+
+  Future<void> _handleSslCommerzCheckout() async {
+    final notifier = ref.read(orderNotifierProvider.notifier);
+    final coupon = ref.read(validCouponProvider).coupon;
+
+    // Step 1: Place order and initiate SSLCommerz payment
+    await notifier.initiateCheckout(
+      addressId: selectedAddress!.id,
+      items: widget.items,
+      paymentMethod: PaymentMethod.sslcommerz,
+      couponCode: coupon?.id,
+      notes: noteController.text.trim(),
+      successUrl: 'ebazar://payment/success',  // deep link
+      cancelUrl: 'ebazar://payment/fail',
+    );
+
+    if (!mounted) return;
+
+    final state = ref.read(orderNotifierProvider);
+
+    if (state.failure != null) {
+      AppSnackBar.error(context: context, state.failure!.message);
+    }
+    // If paymentRedirectUrl is set, the listener will open WebView
+  }
 }
 
-// ---------------- HELPER WIDGETS ----------------
+// ============================================================
+// HELPER WIDGETS
+// ============================================================
 
 class _SectionCard extends StatelessWidget {
   final String title;

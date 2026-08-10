@@ -1,9 +1,9 @@
-
 import 'package:ebazarx/features/order/data/datasources/order_remote_data_source.dart';
 import 'package:ebazarx/features/order/data/models/check_out_item_model.dart';
 import 'package:ebazarx/features/order/domain/entities/checkout_item_entity.dart';
 import 'package:ebazarx/features/order/domain/entities/order_entity.dart';
 import 'package:ebazarx/features/order/domain/entities/order_item_entity.dart';
+import 'package:ebazarx/features/order/domain/entities/order_place_response_entity.dart';
 import 'package:ebazarx/features/order/domain/repositories/order_repository.dart';
 
 class OrderRepositoryImpl implements OrderRepository {
@@ -14,21 +14,27 @@ class OrderRepositoryImpl implements OrderRepository {
   /// Customer
 
   @override
-  Future<OrderEntity> placeOrder({
+  Future<OrderPlaceResponseEntity> placeOrder({
     required String addressId,
     required List<CheckoutItemEntity> items,
+    required String paymentMethod,
     String? couponCode,
     String? notes,
+    String? successUrl,
+    String? cancelUrl,
   }) async {
-    final order = await _remoteDataSource.placeOrder(
+    final response = await _remoteDataSource.placeOrder(
       addressId: addressId,
-      items: items.map((e)=>CheckoutItemModel.fromEntity(e)).toList(),
+      items: items,
+      paymentMethod: paymentMethod,
       couponCode: couponCode,
       notes: notes,
+      successUrl: successUrl,
+      cancelUrl: cancelUrl,
     );
-
-    return order.toEntity();
+    return response.toEntity();
   }
+
 
   @override
   Future<List<OrderEntity>> getOrders({
@@ -59,6 +65,19 @@ class OrderRepositoryImpl implements OrderRepository {
     final order = await _remoteDataSource.cancelOrder(orderId);
 
     return order.toEntity();
+  }
+
+  @override
+  Future<OrderEntity> confirmPayment(
+      String orderId,
+      String paymentIntentId,
+      ) async {
+    final model = await _remoteDataSource.confirmPayment(
+      orderId,
+      paymentIntentId,
+    );
+
+    return model.toEntity();
   }
 
   /// Seller

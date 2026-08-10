@@ -2,6 +2,8 @@ import 'package:ebazarx/core/network/api_client.dart';
 import 'package:ebazarx/features/order/data/models/order_item_model.dart';
 import 'package:ebazarx/features/order/data/models/check_out_item_model.dart';
 import 'package:ebazarx/features/order/data/models/order_model.dart';
+import 'package:ebazarx/features/order/data/models/order_place_response_model.dart';
+import 'package:ebazarx/features/order/domain/entities/checkout_item_entity.dart';
 
 
 class OrderRemoteDataSource {
@@ -11,37 +13,33 @@ class OrderRemoteDataSource {
 
   /// Customer
 
-  Future<OrderModel> placeOrder({
+  Future<OrderPlaceResponseModel> placeOrder({
     required String addressId,
-    required List<CheckoutItemModel> items,
+    required List<CheckoutItemEntity> items,
+    required String paymentMethod,
     String? couponCode,
     String? notes,
+    String? successUrl,
+    String? cancelUrl,
   }) async {
     final response = await _apiClient.post(
       '/customer/orders/',
       data: {
         'address_id': addressId,
-        'items': items.map((e) => e.toJson()).toList(),
+        'items': items.map((e) => {'variant_id': e.variant_id, 'quantity': e.quantity}).toList(),
+        'payment_method': paymentMethod,
         'coupon_code': couponCode,
         'notes': notes,
+        'success_url': successUrl,   // for SSLCommerz
+        'cancel_url': cancelUrl,     // for SSLCommerz
       },
     );
 
     if (!response.isSuccess) {
-      throw response.failure ??
-          Exception(response.errorMessage ?? 'Failed to place order');
+      throw response.failure ?? Exception(response.errorMessage ?? 'Failed to place order');
     }
-    print(response.body);
 
-    print(response.body['subtotal'].runtimeType);
-    print(response.body['shipping_fee'].runtimeType);
-    print(response.body['tax'].runtimeType);
-    print(response.body['discount_amount'].runtimeType);
-    print(response.body['grand_total'].runtimeType);
-
-    print(response.body['items'][0]['price_at_time'].runtimeType);
-
-    return OrderModel.fromJson(response.body);
+    return OrderPlaceResponseModel.fromJson(response.body);
   }
 
   Future<List<OrderModel>> getOrders({
@@ -83,6 +81,22 @@ class OrderRemoteDataSource {
 
     return OrderModel.fromJson(response.body);
   }
+
+  Future<OrderModel> confirmPayment(String orderId, String paymentIntentId) async {
+    final response = await _apiClient.post(
+      '/payments/confirm',
+      data: {
+        'order_id': orderId,
+        'payment_intent_id': paymentIntentId,
+      },
+    );
+    if (!response.isSuccess) {
+      throw response.failure ?? Exception('Payment confirmation failed');
+    }
+    return OrderModel.fromJson(response.body);
+  }
+
+
 
   /// Seller
 
