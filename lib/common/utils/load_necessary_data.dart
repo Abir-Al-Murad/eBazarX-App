@@ -18,7 +18,7 @@ Future<void> loadNecessaryData(WidgetRef ref) async {
   }
 
   await Future.wait([
-    safe(ref.read(profileNotifierProvider.notifier).fetchProfile()),
+    // safe(ref.read(profileNotifierProvider.notifier).fetchProfile()),
     safe(ref.read(publicBannerListNotifierProvider.notifier).fetchBanners()),
     safe(ref.read(categoryListNotifierProvider.notifier).fetchCategories(refresh: true)),
     safe(ref.read(flashSaleListNotifierProvider.notifier).fetchFlashSales()),

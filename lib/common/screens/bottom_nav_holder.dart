@@ -8,6 +8,7 @@ import 'dart:ui';
 // import 'package:ebazar/features/orders/presentation/screens/order_list_screen.dart';
 // import 'package:ebazar/features/product/presentation/providers/product_repository_provider.dart';
 // import 'package:ebazar/features/profile/presentation/screens/my_profile_screen.dart';
+import 'package:ebazarx/common/utils/load_necessary_data.dart';
 import 'package:ebazarx/core/services/auth_storage.dart';
 import 'package:ebazarx/features/banner/presentation/providers/banner_providers.dart';
 import 'package:ebazarx/features/cart/presentation/providers/cart_providers.dart';
@@ -56,16 +57,17 @@ class _BottomNavHolderState extends ConsumerState<BottomNavHolder> {
     // });
     print("BottomNavHolder initState");
     Future.microtask(()async{
-      print("fetch profile");
-      await ref.read(profileNotifierProvider.notifier).fetchProfile();
-      print("fetch banners");
-      await ref.read(publicBannerListNotifierProvider.notifier).fetchBanners();
-      await ref.read(categoryListNotifierProvider.notifier).fetchCategories(refresh: true);
-      await ref.read(flashSaleListNotifierProvider.notifier).fetchFlashSales();
-      await ref.read(orderListNotifierProvider.notifier).loadOrders();
-      await ref.read(cartNotifierProvider.notifier).fetchCart();
-      await ref.read(userProductListNotifierProvider.notifier).fetchProducts(refresh: true);
-      await ref.read(wishNotifierProvider.notifier).fetchWishList();
+      // print("fetch profile");
+      // await ref.read(profileNotifierProvider.notifier).fetchProfile();
+      // print("fetch banners");
+      // await ref.read(publicBannerListNotifierProvider.notifier).fetchBanners();
+      // await ref.read(categoryListNotifierProvider.notifier).fetchCategories(refresh: true);
+      // await ref.read(flashSaleListNotifierProvider.notifier).fetchFlashSales();
+      // await ref.read(orderListNotifierProvider.notifier).loadOrders();
+      // await ref.read(cartNotifierProvider.notifier).fetchCart();
+      // await ref.read(userProductListNotifierProvider.notifier).fetchProducts(refresh: true);
+      // await ref.read(wishNotifierProvider.notifier).fetchWishList();
+      loadNecessaryData(ref);
 
 
     });

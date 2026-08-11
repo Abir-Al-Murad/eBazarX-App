@@ -6,6 +6,7 @@ import 'package:ebazarx/common/utils/styles.dart';
 import 'package:ebazarx/common/utils/user_based_login.dart';
 import 'package:ebazarx/common/widgets/aurora_background.dart';
 import 'package:ebazarx/core/utils/app_snackbar.dart';
+import 'package:ebazarx/core/utils/responsive.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -60,9 +61,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final size = MediaQuery.of(context).size;
-    final isDesktop = size.width >= 1100;
-    final isTablet = size.width >= 650 && size.width < 1100;
+    final isDesktop = context.isDesktop;
+    final isTablet = context.isTablet;
 
     final authState = ref.watch(authNotifierProvider);
     final authNotifier = ref.read(authNotifierProvider.notifier);

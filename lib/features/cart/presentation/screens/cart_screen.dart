@@ -50,85 +50,105 @@ class _CartScreenState extends ConsumerState<CartScreen> {
       //   ],
       // ),
       body: state.isLoading
-          ? const CartLoadingWidget():AuthStorage.accessToken == null?
-          const GoToLogIn(label: 'Log in to view your cart.',icon: Icons.shopping_cart_outlined)
+          ? const CartLoadingWidget()
+          : AuthStorage.accessToken == null
+          ? const GoToLogIn(
+              label: 'Log in to view your cart.',
+              icon: Icons.shopping_cart_outlined,
+            )
           : state.failure != null
           ? CartErrorWidget(
-        error: state.failure!.message,
-        onRetry: () => ref.read(cartNotifierProvider.notifier).refresh(),
-      )
+              error: state.failure!.message,
+              onRetry: () => ref.read(cartNotifierProvider.notifier).refresh(),
+            )
           : state.cart == null || state.cart!.items.isEmpty
           ? const EmptyCartWidget()
           : SafeArea(
-            child: Column(
-                    children: [
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: () => ref.read(cartNotifierProvider.notifier).refresh(),
-                child: CartList(
-                  items: state.cart!.items,
-                  updatingItemIds: state.updatingItemIds,
-                  removingItemIds: state.removingItemIds,
-                  onUpdateQuantity: (itemId, quantity) {
-                    ref.read(cartNotifierProvider.notifier).updateCartItem(
-                      itemId: itemId,
-                      quantity: quantity,
-                    );
-                  },
-                  onRemove: (itemId) {
-                    ref.read(cartNotifierProvider.notifier).removeCartItem(itemId);
-                  },
-                ),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: RefreshIndicator(
+                      onRefresh: () =>
+                          ref.read(cartNotifierProvider.notifier).refresh(),
+                      child: CartList(
+                        items: state.cart!.items,
+                        updatingItemIds: state.updatingItemIds,
+                        removingItemIds: state.removingItemIds,
+                        onUpdateQuantity: (itemId, quantity) {
+                          ref
+                              .read(cartNotifierProvider.notifier)
+                              .updateCartItem(
+                                itemId: itemId,
+                                quantity: quantity,
+                              );
+                        },
+                        onRemove: (itemId) async {
+                          await ref
+                              .read(cartNotifierProvider.notifier)
+                              .removeCartItem(itemId);
+                        },
+                      ),
+                    ),
+                  ),
+
+                  // Padding(
+                  //   padding: const EdgeInsets.symmetric(horizontal: 16),
+                  //   child: Row(
+                  //     children: [
+                  //       Expanded(
+                  //         child: TextFormField(
+                  //           decoration: InputDecoration(
+                  //             hintText: 'Enter coupon code',
+                  //             prefixIcon: const Icon(Icons.local_offer_outlined),
+                  //             border: OutlineInputBorder(
+                  //               borderRadius: BorderRadius.circular(12),
+                  //             ),
+                  //             isDense: true,
+                  //           ),
+                  //           textCapitalization: TextCapitalization.characters,
+                  //           onChanged: (value) {
+                  //             // Save locally or in notifier if needed
+                  //           },
+                  //         ),
+                  //       ),
+                  //       const SizedBox(width: 12),
+                  //       FilledButton(
+                  //         onPressed: () {
+                  //           // Validate / Apply Coupon
+                  //         },
+                  //         child: const Text('Apply'),
+                  //       ),
+                  //     ],
+                  //   ),
+                  // ),
+                  const SizedBox(height: 16),
+
+                  CartSummaryBar(
+                    subtotal: state.cart!.subtotal,
+                    totalItems: state.cart!.totalItems,
+                    onCheckout: () {
+                      final checkoutItems = state.cart!.items
+                          .map(
+                            (e) => CheckoutItemEntity(
+                              variant_id: e.variantId,
+                              quantity: e.quantity,
+                            ),
+                          )
+                          .toList();
+                      // Navigate to checkout screen with checkoutItems
+                      context.pushNamed(
+                        AppRoutesName.checkout,
+                        extra: {
+                          "items": checkoutItems,
+                          "fromCart": true,
+                          'subTotal': state.cart!.subtotal,
+                        },
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
-            // Padding(
-            //   padding: const EdgeInsets.symmetric(horizontal: 16),
-            //   child: Row(
-            //     children: [
-            //       Expanded(
-            //         child: TextFormField(
-            //           decoration: InputDecoration(
-            //             hintText: 'Enter coupon code',
-            //             prefixIcon: const Icon(Icons.local_offer_outlined),
-            //             border: OutlineInputBorder(
-            //               borderRadius: BorderRadius.circular(12),
-            //             ),
-            //             isDense: true,
-            //           ),
-            //           textCapitalization: TextCapitalization.characters,
-            //           onChanged: (value) {
-            //             // Save locally or in notifier if needed
-            //           },
-            //         ),
-            //       ),
-            //       const SizedBox(width: 12),
-            //       FilledButton(
-            //         onPressed: () {
-            //           // Validate / Apply Coupon
-            //         },
-            //         child: const Text('Apply'),
-            //       ),
-            //     ],
-            //   ),
-            // ),
-            
-            const SizedBox(height: 16),
-            
-            CartSummaryBar(subtotal: state.cart!.subtotal, totalItems: state.cart!.totalItems, onCheckout: () {
-              final checkoutItems = state.cart!.items
-                  .map(
-                    (e) => CheckoutItemEntity(
-                  variant_id: e.variantId,
-                  quantity: e.quantity,
-                ),
-              )
-                  .toList();
-              // Navigate to checkout screen with checkoutItems
-              context.pushNamed(AppRoutesName.checkout,extra: {"items": checkoutItems, "fromCart": true,'subTotal':state.cart!.subtotal});
-            })
-                    ],
-                  ),
-          ),
     );
   }
 

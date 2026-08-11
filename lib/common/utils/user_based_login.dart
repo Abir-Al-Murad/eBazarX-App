@@ -41,6 +41,7 @@ Future<bool> userBasedNavigation(
         return true;
 
       default:
+        context.canPop()?context.pop(true):
         context.goNamed(
           AppRoutesName.widgetTree,
         );
