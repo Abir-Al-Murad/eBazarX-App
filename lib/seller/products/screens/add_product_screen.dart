@@ -1311,7 +1311,7 @@ class SummarySidebar extends StatelessWidget {
         children: [
           Text('Summary', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 24),
-          _SummaryItem(label: 'Category', value: categoryId.isEmpty ? 'Not set' : categoryId),
+          // _SummaryItem(label: 'Category', value: categoryId.isEmpty ? 'Not set' : categoryId),
           _SummaryItem(label: 'Price', value: '\$${price.toStringAsFixed(2)}'),
           if (discountPrice > 0)
             _SummaryItem(label: 'Discount', value: '\$${discountPrice.toStringAsFixed(2)}', valueColor: Colors.green),
@@ -1321,7 +1321,7 @@ class SummarySidebar extends StatelessWidget {
           _SummaryItem(label: 'Variants', value: '$variantCount'),
           _SummaryItem(label: 'Status', value: status, valueColor: status == 'Active' ? Colors.green : Colors.orange),
           const Divider(),
-          _SummaryItem(label: 'Estimated Earnings', value: '\$${(finalPrice * 0.85).toStringAsFixed(2)} (after 15% fee)', valueColor: Colors.blue),
+          // _SummaryItem(label: 'Estimated Earnings', value: '\$${(finalPrice * 0.85).toStringAsFixed(2)} (after 15% fee)', valueColor: Colors.blue),
         ],
       ),
     );

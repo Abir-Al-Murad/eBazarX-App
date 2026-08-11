@@ -78,7 +78,9 @@ class ProfileScreen extends ConsumerWidget {
                   SliverToBoxAdapter(
                     child: ProfileHeader(
                       profile: profile,
-                      onEditProfile: () {},
+                      onEditProfile: () {
+
+                      },
                     ),
                   ),
 

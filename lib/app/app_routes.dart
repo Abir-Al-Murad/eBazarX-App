@@ -2,6 +2,8 @@
 import 'package:ebazarx/admin/admin_shell.dart';
 import 'package:ebazarx/admin/banners/screens/admin_banner_form_screen.dart';
 import 'package:ebazarx/admin/banners/screens/admin_banner_list_screen.dart';
+import 'package:ebazarx/admin/categories/screens/admin_category_form_screen.dart';
+import 'package:ebazarx/admin/categories/screens/admin_category_list_screen.dart';
 import 'package:ebazarx/admin/dashboard/screens/admin_dashboard_screen.dart';
 import 'package:ebazarx/admin/orders/screens/admin_order_details_screen.dart';
 import 'package:ebazarx/admin/orders/screens/admin_orders_screen.dart';
@@ -14,6 +16,7 @@ import 'package:ebazarx/features/address/presentation/screens/add_address_screen
 import 'package:ebazarx/features/auth/presentation/screens/login_screen.dart';
 import 'package:ebazarx/features/auth/presentation/screens/registration_screen.dart';
 import 'package:ebazarx/features/banner/domain/entities/banner.dart';
+import 'package:ebazarx/features/category/domain/entities/category_entity.dart';
 import 'package:ebazarx/features/order/domain/entities/checkout_item_entity.dart';
 import 'package:ebazarx/features/order/presentation/screens/check_out_screen.dart';
 import 'package:ebazarx/features/order/presentation/screens/order_details_screen.dart';
@@ -49,6 +52,7 @@ class AppRoutes {
   static final _adminProductsNavKey  = GlobalKey<NavigatorState>();
   static final _adminOrderNavKey  = GlobalKey<NavigatorState>();
   static final _adminBannerNavKey  = GlobalKey<NavigatorState>();
+  static final _adminCategoryNavKey  = GlobalKey<NavigatorState>();
 
   // Optional: you can also keep separate keys for other features if needed
 
@@ -208,6 +212,21 @@ class AppRoutes {
                 path: '/form',
                 name: AppRoutesName.adminBannerFrom,
                 builder: (context, state) =>  AdminBannerFormScreen(banner: state.extra as BannerEntity?),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            navigatorKey: _adminCategoryNavKey,
+            routes: [
+              GoRoute(
+                path: '/admin/categories',
+                name: AppRoutesName.adminCategories,
+                builder: (context, state) => const AdminCategoryListScreen(),
+              ),
+              GoRoute(
+                path: '/admin/categories/create',
+                name: AppRoutesName.adminCategoryForm,
+                builder: (context, state) =>  AdminCategoryFormScreen(category: state.extra as Category?),
               ),
             ],
           ),

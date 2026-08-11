@@ -23,8 +23,7 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
   @override
   void initState() {
     super.initState();
-
-    Future.microtask(() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(orderListNotifierProvider.notifier).loadOrders();
     });
   }
@@ -34,28 +33,52 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
     final state = ref.watch(orderListNotifierProvider);
     final theme = Theme.of(context);
 
-    // Latest order first
     final orders = [...state.orders]
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     return Scaffold(
-      body: SafeArea(
+      body: AuthStorage.accessToken == null
+          ? const GoToLogIn(
+        label: 'Log in to view your orders.',
+        icon: Icons.production_quantity_limits,
+      )
+          : (state.isLoading && state.orders.isEmpty)
+          ? _OrderListShimmer(
+        crossAxisCount: context.responsive(
+          mobile: 1,
+          tablet: 2,
+          desktop: 3,
+        ),
+      )
+          : (state.failure != null && state.orders.isEmpty)
+          ? _ErrorState(
+        message: state.failure!.message,
+        onRetry: () =>
+            ref.read(orderListNotifierProvider.notifier).loadOrders(),
+      )
+          : orders.isEmpty
+          ? const _EmptyState()
+          : SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: EdgeInsets.fromLTRB(
-                context.paddingSizeDefault,
-                context.paddingSizeDefault,
-                context.paddingSizeDefault,
-                context.paddingSizeSmall,
-              ),
-              child: Text(
-                "My Orders",
-                style: TextStyle(
-                  fontSize: context.fontSizeLarge,
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onSurface,
+              padding: EdgeInsets.all(context.paddingSizeDefault),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "My Orders",
+                      style: theme.textTheme.headlineSmall,
+                    ),
+                    IconButton(
+                      onPressed: () => ref
+                          .read(orderListNotifierProvider.notifier)
+                          .refresh(),
+                      icon: const Icon(Icons.refresh_rounded),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -63,80 +86,48 @@ class _OrderListScreenState extends ConsumerState<OrderListScreen> {
               child: RefreshIndicator(
                 onRefresh: () =>
                     ref.read(orderListNotifierProvider.notifier).refresh(),
-                child: Builder(
-                  builder: (_) {
-                    if (!AuthStorage.instance.isLoggedIn) {
-                      return GoToLogIn(
-                        label: "Log in to view your orders.",
-                        icon: Icons.production_quantity_limits,
-                      );
-                    }
-
-                    if (state.isLoading && state.orders.isEmpty) {
-                      return _OrderListShimmer(
-                        crossAxisCount: context.responsive(
-                          mobile: 1,
-                          tablet: 2,
-                          desktop: 3,
-                        ),
-                      );
-                    }
-
-                    if (state.failure != null && state.orders.isEmpty) {
-                      return _ErrorState(
-                        message: state.failure!.message,
-                        onRetry: () => ref
-                            .read(orderListNotifierProvider.notifier)
-                            .loadOrders(),
-                      );
-                    }
-
-                    if (orders.isEmpty) {
-                      return const _EmptyState();
-                    }
-
-                    final crossAxisCount = context.responsive(
-                      mobile: 1,
-                      tablet: 2,
-                      desktop: 3,
-                    );
-
-                    if (crossAxisCount == 1) {
-                      return ListView.separated(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: EdgeInsets.all(context.paddingSizeDefault),
-                        itemCount: orders.length + 1,
-                        separatorBuilder: (_, __) =>
-                            SizedBox(height: context.paddingSizeSmall),
-                        itemBuilder: (_, index) {
-                          if (index == orders.length) {
-                            return const SizedBox(height: 100);
-                          }
-                          return _OrderCard(order: orders[index]);
-                        },
-                      );
-                    }
-
-                    return GridView.builder(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: EdgeInsets.all(context.paddingSizeDefault),
-                      itemCount: orders.length,
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: crossAxisCount,
-                        mainAxisSpacing: context.paddingSizeSmall,
-                        crossAxisSpacing: context.paddingSizeSmall,
-                        mainAxisExtent: 220,
-                      ),
-                      itemBuilder: (_, index) =>
-                          _OrderCard(order: orders[index]),
-                    );
-                  },
-                ),
+                child: _buildOrderGrid(context, orders),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildOrderGrid(BuildContext context, List<OrderEntity> orders) {
+    final crossAxisCount = context.responsive(
+      mobile: 1,
+      tablet: 2,
+      desktop: 3,
+    );
+
+    if (crossAxisCount == 1) {
+      return ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.symmetric(horizontal: context.paddingSizeDefault),
+        itemCount: orders.length + 1,
+        separatorBuilder: (_, __) => SizedBox(height: context.paddingSizeSmall),
+        itemBuilder: (_, index) {
+          if (index == orders.length) {
+            return const SizedBox(height: 100);
+          }
+          return _OrderCard(order: orders[index]);
+        },
+      );
+    }
+
+    return GridView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: EdgeInsets.symmetric(horizontal: context.paddingSizeDefault),
+      itemCount: orders.length,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        mainAxisSpacing: context.paddingSizeSmall,
+        crossAxisSpacing: context.paddingSizeSmall,
+        mainAxisExtent: 220,
+      ),
+      itemBuilder: (_, index) => _OrderCard(order: orders[index]),
     );
   }
 }
@@ -195,7 +186,7 @@ class _OrderCard extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(context.radiusLarge),
         onTap: () {
-          context.pushNamed(AppRoutesName.orderDetails,pathParameters: {"order_id":order.id});
+          context.pushNamed(AppRoutesName.orderDetails, pathParameters: {"order_id": order.id});
         },
         child: Container(
           decoration: BoxDecoration(
@@ -212,8 +203,7 @@ class _OrderCard extends StatelessWidget {
                     padding: EdgeInsets.all(context.paddingSizeExtraSmall),
                     decoration: BoxDecoration(
                       color: color.withValues(alpha: 0.12),
-                      borderRadius:
-                      BorderRadius.circular(context.radiusDefault),
+                      borderRadius: BorderRadius.circular(context.radiusDefault),
                     ),
                     child: Icon(_statusIcon(), size: 18, color: color),
                   ),
@@ -248,8 +238,7 @@ class _OrderCard extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: color.withValues(alpha: 0.12),
-                      borderRadius:
-                      BorderRadius.circular(context.radiusDefault),
+                      borderRadius: BorderRadius.circular(context.radiusDefault),
                     ),
                     child: Text(
                       order.orderStatus.name.toUpperCase(),
@@ -261,15 +250,13 @@ class _OrderCard extends StatelessWidget {
                   ),
                 ],
               ),
-              Divider(
-                  height: context.paddingSizeLarge, color: theme.dividerColor),
+              Divider(height: context.paddingSizeLarge, color: theme.dividerColor),
               if (firstItem != null)
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     ClipRRect(
-                      borderRadius:
-                      BorderRadius.circular(context.radiusDefault),
+                      borderRadius: BorderRadius.circular(context.radiusDefault),
                       child: firstItem.productImageAtTime != null &&
                           firstItem.productImageAtTime!.isNotEmpty
                           ? CachedNetworkImage(
@@ -337,8 +324,7 @@ class _OrderCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.shopping_bag_outlined,
-                          size: 16, color: theme.hintColor),
+                      Icon(Icons.shopping_bag_outlined, size: 16, color: theme.hintColor),
                       SizedBox(width: context.paddingSizeExtraSmall),
                       Text(
                         "${items.length} Item${items.length > 1 ? 's' : ''}",
@@ -395,8 +381,7 @@ class _OrderListShimmer extends StatelessWidget {
                   height: 32,
                   decoration: BoxDecoration(
                     color: theme.colorScheme.surfaceContainerHighest,
-                    borderRadius:
-                    BorderRadius.circular(context.radiusDefault),
+                    borderRadius: BorderRadius.circular(context.radiusDefault),
                   ),
                 ),
                 SizedBox(width: context.paddingSizeSmall),
@@ -421,14 +406,12 @@ class _OrderListShimmer extends StatelessWidget {
                   height: 44,
                   decoration: BoxDecoration(
                     color: theme.colorScheme.surfaceContainerHighest,
-                    borderRadius:
-                    BorderRadius.circular(context.radiusDefault),
+                    borderRadius: BorderRadius.circular(context.radiusDefault),
                   ),
                 ),
                 SizedBox(width: context.paddingSizeSmall),
                 Expanded(
-                  child: Container(
-                      height: 14, width: double.infinity, color: theme.cardColor),
+                  child: Container(height: 14, width: double.infinity, color: theme.cardColor),
                 ),
               ],
             ),
@@ -449,8 +432,7 @@ class _OrderListShimmer extends StatelessWidget {
       return ListView.separated(
         padding: EdgeInsets.all(context.paddingSizeDefault),
         itemCount: 6,
-        separatorBuilder: (_, __) =>
-            SizedBox(height: context.paddingSizeSmall),
+        separatorBuilder: (_, __) => SizedBox(height: context.paddingSizeSmall),
         itemBuilder: (_, __) => skeletonCard(),
       );
     }

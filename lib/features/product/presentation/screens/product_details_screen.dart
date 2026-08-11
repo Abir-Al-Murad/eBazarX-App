@@ -1,4 +1,5 @@
 import 'package:ebazarx/app/app_routes_name.dart';
+import 'package:ebazarx/common/utils/load_necessary_data.dart';
 import 'package:ebazarx/core/services/auth_storage.dart';
 import 'package:ebazarx/core/utils/app_snackbar.dart';
 import 'package:ebazarx/features/cart/presentation/providers/cart_providers.dart';
@@ -213,6 +214,10 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
         onAddToCart: () async{
           print(AuthStorage.accessToken);
           if(AuthStorage.accessToken == null){
+            // final res  = await context.pushNamed(AppRoutesName.login);
+            // if(res == true){
+            //   loadNecessaryData(ref);
+            // }
             AppSnackBar.info(context: context,"Please login to add to cart");
             return;
           }
