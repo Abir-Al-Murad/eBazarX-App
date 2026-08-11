@@ -3,6 +3,7 @@ import 'package:ebazarx/core/services/auth_storage.dart';
 import 'package:ebazarx/features/auth/presentation/states/auth_state.dart';
 import 'package:ebazarx/features/wish/domain/usecases/add_to_wishlist_usecase.dart';
 import 'package:ebazarx/features/wish/domain/usecases/get_wishlist_usecase.dart';
+import 'package:ebazarx/features/wish/domain/usecases/remove_from_wishlist_by_variant_usecase.dart';
 import 'package:ebazarx/features/wish/domain/usecases/remove_from_wishlist_usecase.dart';
 import 'package:ebazarx/features/wish/presentation/states/wish_state.dart';
 import 'package:flutter/cupertino.dart';
@@ -12,11 +13,13 @@ class WishNotifier extends StateNotifier<WishState> {
   final GetWishListUseCase _getWishListUseCase;
   final AddToWishListUseCase _addToWishListUseCase;
   final RemoveFromWishListUseCase _removeFromWishListUseCase;
+  final RemoveFromWishlistByVariantUseCase _removeFromWishListByVariantUseCase;
 
   WishNotifier(
       this._getWishListUseCase,
       this._addToWishListUseCase,
       this._removeFromWishListUseCase,
+      this._removeFromWishListByVariantUseCase,
       ) : super(const WishState());
 
   Future<void> fetchWishList({
@@ -112,6 +115,72 @@ class WishNotifier extends StateNotifier<WishState> {
   //   }
   // }
 
+  Future<void> removeFromWishListByVariant(String variantId) async {
+    if (state.removingItemIds.contains(variantId)) return;
+
+    final loadingSet = {...state.removingItemIds};
+    loadingSet.add(variantId);
+
+    state = state.copyWith(
+      removingItemIds: loadingSet,
+      clearFailure: true,
+    );
+
+    try {
+      // Remove from server
+      await _removeFromWishListByVariantUseCase(variantId);
+
+      // Remove from local state
+      final wishlist = state.wishlist;
+
+      if (wishlist != null) {
+        final removedItem = wishlist.items
+            .where((item) => item.variantId == variantId)
+            .toList();
+
+        final updatedItems = wishlist.items
+            .where((item) => item.variantId != variantId)
+            .toList();
+
+        state = state.copyWith(
+          wishlist: wishlist.copyWith(
+            items: updatedItems,
+            totalItems: removedItem.isNotEmpty
+                ? wishlist.totalItems - 1
+                : wishlist.totalItems,
+          ),
+          removingItemIds: {
+            ...state.removingItemIds,
+          }..remove(variantId),
+        );
+      } else {
+        state = state.copyWith(
+          removingItemIds: {
+            ...state.removingItemIds,
+          }..remove(variantId),
+        );
+      }
+    } on Failure catch (e) {
+      state = state.copyWith(
+        removingItemIds: {
+          ...state.removingItemIds,
+        }..remove(variantId),
+        failure: e,
+      );
+    } catch (e, s) {
+      debugPrint('removeFromWishListByVariant error: $e');
+      debugPrintStack(stackTrace: s);
+
+      state = state.copyWith(
+        removingItemIds: {
+          ...state.removingItemIds,
+        }..remove(variantId),
+        failure: UnknownFailure(e.toString()),
+      );
+    }
+  }
+
+
   Future<void> addToWishList(String variantId) async {
     if (state.addingVariantIds.contains(variantId)) return;
 
@@ -205,10 +274,9 @@ class WishNotifier extends StateNotifier<WishState> {
 
   Future<void> toggleWishlist({
     required String variantId,
-    String? itemId,
   }) async {
     if (state.isInWishlist(variantId)) {
-      await removeFromWishList(itemId!);
+      await removeFromWishListByVariant(variantId);
     } else {
       await addToWishList(variantId);
     }

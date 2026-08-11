@@ -1,3 +1,5 @@
+import 'package:ebazarx/core/services/auth_storage.dart';
+import 'package:ebazarx/core/utils/app_snackbar.dart';
 import 'package:ebazarx/features/wish/presentation/providers/wish_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -38,7 +40,11 @@ class BottomActionBar extends StatelessWidget {
                 final isInWishList = ref.watch(wishNotifierProvider).isInWishlist(variantId);
                 return IconButton(
                   onPressed: () {
-                    ref.read(wishNotifierProvider.notifier).toggleWishlist(variantId: variantId,itemId: productId);
+                    if(AuthStorage.accessToken == null){
+                      AppSnackBar.info(context: context,"Please login to add to wishlist");
+                      return;
+                    }
+                    ref.read(wishNotifierProvider.notifier).toggleWishlist(variantId: variantId);
                   },
                   icon: Icon( isInWishList? Icons.favorite : Icons.favorite_border,color: isInWishList? Colors.red : Colors.grey,),
                 );

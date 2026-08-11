@@ -28,4 +28,11 @@ class WishRemoteDataSource {
     }
     return WishListModel.fromJson(response.body);
   }
+
+  Future<void> removeFromWishListByVariant(String variantId)async{
+    final response = await _apiClient.delete('/customer/wishlist/variant/$variantId');
+    if(!response.isSuccess){
+      throw response.failure ?? Exception(response.errorMessage ?? 'Failed to remove from wishlist');
+    }
+  }
 }

@@ -2,6 +2,7 @@ import 'package:ebazarx/app/app_routes_name.dart';
 import 'package:ebazarx/common/providers/bottom_nav_provider.dart';
 import 'package:ebazarx/common/widgets/go_to_login.dart';
 import 'package:ebazarx/core/services/auth_storage.dart';
+import 'package:ebazarx/features/cart/presentation/providers/cart_providers.dart';
 import 'package:ebazarx/features/wish/presentation/providers/wish_providers.dart';
 import 'package:ebazarx/features/wish/presentation/widgets/wishlist_empty.dart';
 import 'package:ebazarx/features/wish/presentation/widgets/wishlist_error.dart';
@@ -68,7 +69,9 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
       
             return WishlistItemCard(item: item, onRemove: () {
               ref.read(wishNotifierProvider.notifier).removeFromWishList(item.id);
-            }, onAddToCart: () {  },);
+            }, onAddToCart: ()async {
+              ref.read(cartNotifierProvider.notifier).addToCart(variantId: item.variantId, quantity: 1);
+            },);
           },
         ),
       ),

@@ -22,4 +22,9 @@ class WishRepositoryImpl implements WishRepository {
     final wishlist = await _remoteDataSource.getWishList();
     return wishlist.toEntity();
   }
+
+  @override
+  Future<void> removeFromWishListByVariant(String variantId) {
+    return _remoteDataSource.removeFromWishListByVariant(variantId);
+  }
 }
