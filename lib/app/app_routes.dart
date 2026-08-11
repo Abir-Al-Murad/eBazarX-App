@@ -1,5 +1,7 @@
 // lib/app/app_routes.dart
 import 'package:ebazarx/admin/admin_shell.dart';
+import 'package:ebazarx/admin/banners/screens/admin_banner_form_screen.dart';
+import 'package:ebazarx/admin/banners/screens/admin_banner_list_screen.dart';
 import 'package:ebazarx/admin/dashboard/screens/admin_dashboard_screen.dart';
 import 'package:ebazarx/admin/orders/screens/admin_order_details_screen.dart';
 import 'package:ebazarx/admin/orders/screens/admin_orders_screen.dart';
@@ -11,6 +13,7 @@ import 'package:ebazarx/features/address/presentation/screens/address_screen.dar
 import 'package:ebazarx/features/address/presentation/screens/add_address_screen.dart';
 import 'package:ebazarx/features/auth/presentation/screens/login_screen.dart';
 import 'package:ebazarx/features/auth/presentation/screens/registration_screen.dart';
+import 'package:ebazarx/features/banner/domain/entities/banner.dart';
 import 'package:ebazarx/features/order/domain/entities/checkout_item_entity.dart';
 import 'package:ebazarx/features/order/presentation/screens/check_out_screen.dart';
 import 'package:ebazarx/features/order/presentation/screens/order_details_screen.dart';
@@ -45,6 +48,7 @@ class AppRoutes {
   static final _adminDashboardNavKey  = GlobalKey<NavigatorState>();
   static final _adminProductsNavKey  = GlobalKey<NavigatorState>();
   static final _adminOrderNavKey  = GlobalKey<NavigatorState>();
+  static final _adminBannerNavKey  = GlobalKey<NavigatorState>();
 
   // Optional: you can also keep separate keys for other features if needed
 
@@ -145,6 +149,7 @@ class AppRoutes {
               ),
             ],
           ),
+
         ],
         builder: (context, state, navigationShell) {
           return SellerShell(navigationShell: navigationShell);
@@ -188,7 +193,24 @@ class AppRoutes {
               name: AppRoutesName.adminOrderDetailsScreen,
               builder: (context, state) => AdminOrderDetailsScreen(orderId: state.pathParameters['order_id']!),
             ),
-          ])
+          ]),
+
+          // Seller Orders
+          StatefulShellBranch(
+            navigatorKey: _adminBannerNavKey,
+            routes: [
+              GoRoute(
+                path: '/admin/banners',
+                name: AppRoutesName.adminBanners,
+                builder: (context, state) => const AdminBannerListScreen(),
+              ),
+              GoRoute(
+                path: '/form',
+                name: AppRoutesName.adminBannerFrom,
+                builder: (context, state) =>  AdminBannerFormScreen(banner: state.extra as BannerEntity?),
+              ),
+            ],
+          ),
           // Add more admin branches here later (e.g., /admin/users)
         ],
         builder: (context, state, navigationShell) {

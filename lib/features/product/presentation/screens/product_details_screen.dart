@@ -223,13 +223,9 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
             quantity: ref.read(productDetailsNotifierProvider).quantity,
           );
           if(ref.watch(cartNotifierProvider).failure != null){
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(ref.watch(cartNotifierProvider).failure.toString())),
-            );
+            AppSnackBar.error(context: context,ref.watch(cartNotifierProvider).failure!.message);
           } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Added to cart")),
-            );
+            AppSnackBar.success(context: context,"Added to cart");
           }
         },
         onBuyNow: () {

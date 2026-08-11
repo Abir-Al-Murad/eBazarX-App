@@ -64,7 +64,7 @@ class _AdminShellState extends ConsumerState<AdminShell> {
         leading: Builder(
           builder: (context) {
             return IconButton(
-              icon: const Icon(Icons.menu),
+              icon:  Icon(Icons.menu,color: Theme.of(context).brightness == Brightness.dark?Colors.white:Colors.black,),
               onPressed: () {
                 Scaffold.of(context).openDrawer();
               },
@@ -73,7 +73,7 @@ class _AdminShellState extends ConsumerState<AdminShell> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_none),
+            icon:  Icon(Icons.notifications_none,color: Theme.of(context).brightness == Brightness.dark?Colors.white:Colors.black,),
             onPressed: () {},
           ),
         ],
@@ -95,78 +95,6 @@ class _AdminShellState extends ConsumerState<AdminShell> {
 }
 
 
-// ===========================================================
-// ADMIN TOP BAR
-// ===========================================================
-
-class _AdminTopBar extends StatelessWidget {
-  const _AdminTopBar({required this.isDesktop});
-
-  final bool isDesktop;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      elevation: .5,
-      color: Colors.white,
-      child: SizedBox(
-        height: 70,
-        child: Row(
-          children: [
-            if (!isDesktop)
-              Builder(
-                builder: (context) => IconButton(
-                  icon: const Icon(Icons.menu),
-                  onPressed: () => Scaffold.of(context).openDrawer(),
-                ),
-              ),
-
-            const SizedBox(width: 10),
-
-            const Text(
-              'Admin Dashboard',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
-            ),
-
-            const Spacer(),
-
-            SizedBox(
-              width: 300,
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Search...',
-                  prefixIcon: const Icon(Icons.search),
-                  filled: true,
-                  fillColor: const Color(0xffF5F5F5),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(width: 20),
-
-            IconButton(
-              icon: const Icon(Icons.notifications_none),
-              onPressed: () {},
-            ),
-
-            const SizedBox(width: 10),
-
-            const CircleAvatar(
-              radius: 18,
-              child: Icon(Icons.admin_panel_settings),
-            ),
-
-            const SizedBox(width: 20),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 // ===========================================================
 // ADMIN SIDEBAR
@@ -210,17 +138,18 @@ class _AdminSidebar extends ConsumerWidget {
 
                 _item(Icons.shopping_cart_rounded, 'Orders', 2),
 
-                _item(Icons.people_alt_rounded, 'Users', 3),
+                _item(Icons.image_rounded, 'Banners', 3),
 
-                _item(Icons.store_rounded, 'Sellers', 4),
+                _item(Icons.people_alt_rounded, 'Users', 4),
 
-                _item(Icons.category_rounded, 'Categories', 5),
+                _item(Icons.store_rounded, 'Sellers', 5),
 
-                _item(Icons.reviews_rounded, 'Reviews', 6),
+                _item(Icons.category_rounded, 'Categories', 6),
 
-                _item(Icons.local_offer_rounded, 'Coupons', 7),
+                _item(Icons.reviews_rounded, 'Reviews', 7),
 
-                _item(Icons.image_rounded, 'Banners', 8),
+                _item(Icons.local_offer_rounded, 'Coupons', 8),
+
 
                 _item(Icons.analytics_rounded, 'Analytics', 9),
               ],
@@ -346,40 +275,41 @@ class _AdminDrawer extends StatelessWidget {
                   ),
                   _drawerItem(
                     context,
+                    Icons.image_rounded,
+                    'Banners',
+                    3,
+                  ),
+                  _drawerItem(
+                    context,
                     Icons.people_alt_rounded,
                     'Users',
-                    3,
+                    4,
                   ),
                   _drawerItem(
                     context,
                     Icons.store_rounded,
                     'Sellers',
-                    4,
+                    5,
                   ),
                   _drawerItem(
                     context,
                     Icons.category_rounded,
                     'Categories',
-                    5,
+                    6,
                   ),
                   _drawerItem(
                     context,
                     Icons.reviews_rounded,
                     'Reviews',
-                    6,
+                    7,
                   ),
                   _drawerItem(
                     context,
                     Icons.local_offer_rounded,
                     'Coupons',
-                    7,
-                  ),
-                  _drawerItem(
-                    context,
-                    Icons.image_rounded,
-                    'Banners',
                     8,
                   ),
+
                   _drawerItem(
                     context,
                     Icons.analytics_rounded,

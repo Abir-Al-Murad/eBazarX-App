@@ -72,7 +72,7 @@ class _FlashSaleSectionState extends ConsumerState<FlashSaleHorizontalListView> 
         ),
         const SizedBox(height: 16),
         SizedBox(
-          height: 185,
+          height: 195,
           child: ListView.separated(
             physics: const BouncingScrollPhysics(),
             scrollDirection: Axis.horizontal,

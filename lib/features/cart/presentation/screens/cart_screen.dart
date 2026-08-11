@@ -1,6 +1,7 @@
 import 'package:ebazarx/app/app_routes_name.dart';
 import 'package:ebazarx/common/widgets/go_to_login.dart';
 import 'package:ebazarx/core/services/auth_storage.dart';
+import 'package:ebazarx/core/utils/responsive.dart';
 import 'package:ebazarx/features/cart/presentation/screens/cart_screen.dart';
 import 'package:ebazarx/features/cart/presentation/widgets/cart_summary_bar.dart';
 import 'package:ebazarx/features/order/domain/entities/checkout_item_entity.dart';
@@ -66,6 +67,20 @@ class _CartScreenState extends ConsumerState<CartScreen> {
           : SafeArea(
               child: Column(
                 children: [
+                  Padding(
+                    padding:  EdgeInsets.all(context.paddingSizeDefault),
+                    child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text("Cart", style: Theme.of(context).textTheme.headlineSmall),
+                            IconButton(onPressed: () {
+                              _showClearCartDialog(context);
+                            }, icon: const Icon(Icons.clear))
+                          ],
+                        )),
+                  ),
                   Expanded(
                     child: RefreshIndicator(
                       onRefresh: () =>

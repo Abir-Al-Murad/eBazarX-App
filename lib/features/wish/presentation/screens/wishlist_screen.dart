@@ -2,6 +2,7 @@ import 'package:ebazarx/app/app_routes_name.dart';
 import 'package:ebazarx/common/providers/bottom_nav_provider.dart';
 import 'package:ebazarx/common/widgets/go_to_login.dart';
 import 'package:ebazarx/core/services/auth_storage.dart';
+import 'package:ebazarx/core/utils/responsive.dart';
 import 'package:ebazarx/features/cart/presentation/providers/cart_providers.dart';
 import 'package:ebazarx/features/wish/presentation/providers/wish_providers.dart';
 import 'package:ebazarx/features/wish/presentation/widgets/wishlist_empty.dart';
@@ -60,19 +61,31 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
         onRefresh: () async {
           await ref.read(wishNotifierProvider.notifier).refresh();
         },
-        child: ListView.separated(
-          padding: const EdgeInsets.all(16),
-          itemCount: wishlist.items.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
-          itemBuilder: (_, index) {
-            final item = wishlist.items[index];
-      
-            return WishlistItemCard(item: item, onRemove: () {
-              ref.read(wishNotifierProvider.notifier).removeFromWishList(item.id);
-            }, onAddToCart: ()async {
-              ref.read(cartNotifierProvider.notifier).addToCart(variantId: item.variantId, quantity: 1);
-            },);
-          },
+        child: Column(
+          children: [
+            Padding(
+              padding:  EdgeInsets.all(context.paddingSizeDefault),
+              child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text("Wishlist", style: Theme.of(context).textTheme.headlineSmall)),
+            ),
+            Expanded(
+              child: ListView.separated(
+                padding: const EdgeInsets.all(16),
+                itemCount: wishlist.items.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (_, index) {
+                  final item = wishlist.items[index];
+                    
+                  return WishlistItemCard(item: item, onRemove: () {
+                    ref.read(wishNotifierProvider.notifier).removeFromWishList(item.id);
+                  }, onAddToCart: ()async {
+                    ref.read(cartNotifierProvider.notifier).addToCart(variantId: item.variantId, quantity: 1);
+                  },);
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );

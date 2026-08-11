@@ -143,12 +143,12 @@ class _DashboardHeader extends StatelessWidget {
             ],
           ),
         ),
-        IconButton(
-          onPressed: () {},
-          icon: const Icon(Icons.notifications_none),
-        ),
-        const SizedBox(width: 8),
-        const CircleAvatar(radius: 20, child: Icon(Icons.admin_panel_settings)),
+        // IconButton(
+        //   onPressed: () {},
+        //   icon: const Icon(Icons.notifications_none),
+        // ),
+        // const SizedBox(width: 8),
+        // const CircleAvatar(radius: 20, child: Icon(Icons.admin_panel_settings)),
       ],
     );
   }

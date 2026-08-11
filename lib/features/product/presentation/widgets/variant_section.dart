@@ -205,12 +205,16 @@ class _VariantSectionState extends State<VariantSection> {
                           ),
                         ),
                         const SizedBox(width: 6),
-                        Text(
-                          _selectedVariant.sku,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.onSurface,
-                            fontSize: context.fontSizeSmall,
+                        Expanded(
+                          child: Text(
+                            _selectedVariant.sku,
+                            maxLines: 1,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.onSurface,
+                              fontSize: context.fontSizeSmall,
+                              overflow: TextOverflow.ellipsis
+                            ),
                           ),
                         ),
                       ],
