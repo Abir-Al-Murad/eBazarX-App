@@ -35,6 +35,10 @@ class AppRoutesName{
   static const String adminBannerFrom = '/adminBannerForm';
   static const String adminCategories = '/adminCategories';
   static const String adminCategoryForm = '/adminCategoryForm';
+  static const String adminFlashSale = '/adminFlashSale';
+  static const String adminFlashSaleForm = '/adminFlashSaleForm';
+  static const String adminCoupons = '/adminCoupons';
+  static const String adminCouponForm = '/adminCouponForm';
   static const String adminProducts = '/admin/products';
   static const String adminOrders = '/admin/orders';
   static const String adminProductCreate = '/admin/products/create';

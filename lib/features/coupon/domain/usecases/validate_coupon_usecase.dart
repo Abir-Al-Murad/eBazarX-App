@@ -4,7 +4,7 @@ import 'package:ebazarx/features/coupon/domain/repositories/coupon_repository.da
 class ValidateCouponUseCase {
   final CouponRepository _couponRepository;
   ValidateCouponUseCase(this._couponRepository);
-  Future<CouponEntity> call({
+  Future<CouponValidationEntity> call({
     required String couponCode,
     required double subtotal,
     required String userId,

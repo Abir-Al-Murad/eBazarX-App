@@ -41,7 +41,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   static const _paymentOptions = [
     (PaymentMethod.cod, 'Cash on Delivery', Icons.payments_outlined),
-    (PaymentMethod.sslcommerz, 'SSLCommerz (bKash/Nagad/Cards)', Icons.credit_card_rounded),
+    (
+      PaymentMethod.sslcommerz,
+      'SSLCommerz (bKash/Nagad/Cards)',
+      Icons.credit_card_rounded,
+    ),
   ];
 
   double get _shipping => 100.0;
@@ -58,7 +62,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       if (addresses.isNotEmpty && mounted) {
         setState(() {
           selectedAddress = addresses.firstWhere(
-                (e) => e.isDefault,
+            (e) => e.isDefault,
             orElse: () => addresses.first,
           );
         });
@@ -78,7 +82,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final addressState = ref.watch(addressListProvider);
     final orderState = ref.watch(orderNotifierProvider);
     final profileState = ref.watch(profileNotifierProvider);
-    final couponState = ref.watch(validCouponProvider);
+    final couponState = ref.watch(validateCouponProvider);
     final theme = Theme.of(context);
 
     final currentDiscount = couponState.coupon?.discountAmount ?? 0.0;
@@ -88,13 +92,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
     // ✅ Listen for payment redirect (SSLCommerz)
     ref.listen(orderNotifierProvider, (prev, next) {
-      if (next.paymentRedirectUrl != null && next.paymentRedirectUrl!.isNotEmpty) {
+      if (next.paymentRedirectUrl != null &&
+          next.paymentRedirectUrl!.isNotEmpty) {
         // Open WebView for SSLCommerz
-        context.push('/payment-webview', extra: {
-          'url': next.paymentRedirectUrl!,
-          'orderId': next.order!.id,
-          'paymentId': next.paymentId!,
-        });
+        context.push(
+          '/payment-webview',
+          extra: {
+            'url': next.paymentRedirectUrl!,
+            'orderId': next.order!.id,
+            'paymentId': next.paymentId!,
+          },
+        );
       }
     });
 
@@ -120,20 +128,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       ),
       bottomNavigationBar: context.isDesktop
           ? null
-          : _buildPlaceOrderBar(
-        context,
-        orderState,
-        profileState,
-        couponState,
-      ),
+          : _buildPlaceOrderBar(context, orderState, profileState, couponState),
     );
   }
 
   Widget _buildMobileLayout(
-      BuildContext context,
-      addressState,
-      dynamic orderState,
-      ) {
+    BuildContext context,
+    addressState,
+    dynamic orderState,
+  ) {
     return ListView(
       padding: EdgeInsets.all(context.paddingSizeDefault),
       children: [
@@ -152,12 +155,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   Widget _buildDesktopLayout(
-      BuildContext context,
-      addressState,
-      dynamic orderState,
-      ) {
+    BuildContext context,
+    addressState,
+    dynamic orderState,
+  ) {
     final profileState = ref.watch(profileNotifierProvider);
-    final couponState = ref.watch(validCouponProvider);
+    final couponState = ref.watch(validateCouponProvider);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -205,9 +208,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   // ============================================================
 
   Widget _buildAddressSection(
-      BuildContext context,
-      List<AddressEntity> addresses,
-      ) {
+    BuildContext context,
+    List<AddressEntity> addresses,
+  ) {
     final theme = Theme.of(context);
 
     return _SectionCard(
@@ -278,8 +281,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: theme.colorScheme.primary
-                                        .withAlpha(31),
+                                    color: theme.colorScheme.primary.withAlpha(
+                                      31,
+                                    ),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
@@ -421,8 +425,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   Widget _buildCouponSection(BuildContext context) {
     final theme = Theme.of(context);
-    final couponState = ref.watch(validCouponProvider);
-    final couponNotifier = ref.read(validCouponProvider.notifier);
+    final couponState = ref.watch(validateCouponProvider);
+    final couponNotifier = ref.read(validateCouponProvider.notifier);
 
     return _SectionCard(
       title: "Coupon Code",
@@ -452,7 +456,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             onPressed: () async {
               final code = couponController.text.trim();
               if (code.isEmpty) {
-                AppSnackBar.warning(context: context, "Please enter a coupon code");
+                AppSnackBar.warning(
+                  context: context,
+                  "Please enter a coupon code",
+                );
                 return;
               }
 
@@ -472,12 +479,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
               if (res && couponState.coupon!.valid) {
                 setState(() {
-                  _discount = ref.read(validCouponProvider).coupon?.discountAmount ?? 0;
+                  _discount =
+                      ref.read(validateCouponProvider).coupon?.discountAmount ??
+                      0;
                 });
-                AppSnackBar.success(context: context, "Coupon applied successfully");
+                AppSnackBar.success(
+                  context: context,
+                  "Coupon applied successfully",
+                );
                 couponController.clear();
               } else {
-                final failure = ref.read(validCouponProvider).failure;
+                final failure = ref.read(validateCouponProvider).failure;
                 AppSnackBar.error(
                   context: context,
                   failure?.message ?? "Invalid coupon code",
@@ -505,11 +517,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final theme = Theme.of(context);
 
     Widget row(
-        String label,
-        String value, {
-          bool isTotal = false,
-          Color? valueColor,
-        }) {
+      String label,
+      String value, {
+      bool isTotal = false,
+      Color? valueColor,
+    }) {
       return Padding(
         padding: EdgeInsets.symmetric(
           vertical: context.paddingSizeExtraSmall / 2,
@@ -520,7 +532,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             Text(
               label,
               style: TextStyle(
-                fontSize: isTotal ? context.fontSizeDefault : context.fontSizeSmall,
+                fontSize: isTotal
+                    ? context.fontSizeDefault
+                    : context.fontSizeSmall,
                 fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
                 color: isTotal ? theme.colorScheme.onSurface : theme.hintColor,
               ),
@@ -528,7 +542,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             Text(
               value,
               style: TextStyle(
-                fontSize: isTotal ? context.fontSizeLarge : context.fontSizeSmall,
+                fontSize: isTotal
+                    ? context.fontSizeLarge
+                    : context.fontSizeSmall,
                 fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
                 color: valueColor ?? theme.colorScheme.onSurface,
               ),
@@ -590,15 +606,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   // ============================================================
 
   Widget _buildPlaceOrderBar(
-      BuildContext context,
-      dynamic orderState,
-      dynamic profileState,
-      dynamic couponState, {
-        bool isSticky = false,
-      }) {
+    BuildContext context,
+    dynamic orderState,
+    dynamic profileState,
+    dynamic couponState, {
+    bool isSticky = false,
+  }) {
     final theme = Theme.of(context);
 
-    final canPlace = !orderState.isLoading &&
+    final canPlace =
+        !orderState.isLoading &&
         selectedAddress != null &&
         profileState.profile != null;
 
@@ -608,12 +625,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       child: FilledButton(
         onPressed: canPlace
             ? () async {
-          if (_paymentMethod == PaymentMethod.sslcommerz) {
-            await _handleSslCommerzCheckout();
-          } else {
-            await _handleCodCheckout();
-          }
-        }
+                if (_paymentMethod == PaymentMethod.sslcommerz) {
+                  await _handleSslCommerzCheckout();
+                } else {
+                  await _handleCodCheckout();
+                }
+              }
             : null,
         style: FilledButton.styleFrom(
           shape: RoundedRectangleBorder(
@@ -622,20 +639,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         ),
         child: orderState.isLoading
             ? SizedBox(
-          width: 22,
-          height: 22,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: theme.colorScheme.onPrimary,
-          ),
-        )
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: theme.colorScheme.onPrimary,
+                ),
+              )
             : Text(
-          "Place Order  •  ৳ ${_total.toStringAsFixed(2)}",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: context.fontSizeDefault,
-          ),
-        ),
+                "Place Order  •  ৳ ${_total.toStringAsFixed(2)}",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: context.fontSizeDefault,
+                ),
+              ),
       ),
     );
 
@@ -656,14 +673,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   // ============================================================
 
   Future<void> _handleCodCheckout() async {
-    final coupon = ref.read(validCouponProvider).coupon;
+    final coupon = ref.read(validateCouponProvider).coupon;
 
-    final success = await ref.read(orderNotifierProvider.notifier).placeOrder(
-      addressId: selectedAddress!.id,
-      items: widget.items,
-      couponCode: coupon?.id,
-      notes: noteController.text.trim(),
-    );
+    final success = await ref
+        .read(orderNotifierProvider.notifier)
+        .placeOrder(
+          addressId: selectedAddress!.id,
+          items: widget.items,
+          couponCode: coupon?.couponId,
+          notes: noteController.text.trim(),
+        );
 
     if (!mounted) return;
 
@@ -676,7 +695,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       context.pop();
       // TODO: Navigate to order success screen
     } else {
-      final failure = ref.read(orderNotifierProvider).failure?.message ??
+      final failure =
+          ref.read(orderNotifierProvider).failure?.message ??
           "Failed to place order";
       AppSnackBar.error(context: context, failure);
     }
@@ -684,16 +704,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   Future<void> _handleSslCommerzCheckout() async {
     final notifier = ref.read(orderNotifierProvider.notifier);
-    final coupon = ref.read(validCouponProvider).coupon;
+    final coupon = ref.read(validateCouponProvider).coupon;
 
     // Step 1: Place order and initiate SSLCommerz payment
     await notifier.initiateCheckout(
       addressId: selectedAddress!.id,
       items: widget.items,
       paymentMethod: PaymentMethod.sslcommerz,
-      couponCode: coupon?.id,
+      couponCode: coupon?.couponId,
       notes: noteController.text.trim(),
-      successUrl: 'ebazar://payment/success',  // deep link
+      successUrl: 'ebazar://payment/success', // deep link
       cancelUrl: 'ebazar://payment/fail',
     );
 

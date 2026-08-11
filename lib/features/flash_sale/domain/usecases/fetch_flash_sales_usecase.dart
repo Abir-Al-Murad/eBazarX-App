@@ -1,12 +1,18 @@
-import 'package:ebazarx/features/flash_sale/domain/entities/flash_sale_entity.dart';
-import 'package:ebazarx/features/flash_sale/domain/repositories/flash_sale_repository.dart';
+import '../entities/flash_sale_entity.dart';
+import '../repositories/flash_sale_repository.dart';
 
 class FetchFlashSalesUseCase {
-  final FlashSaleRepository _flashSaleRepository;
+  final FlashSaleRepository repository;
 
-  FetchFlashSalesUseCase(this._flashSaleRepository);
+  const FetchFlashSalesUseCase(this.repository);
 
-  Future<List<FlashSale>> call() async {
-    return _flashSaleRepository.fetchFlashSales();
+  Future<List<FlashSale>> call({
+    int skip = 0,
+    int limit = 20,
+  }) async {
+    return repository.fetchFlashSales(
+      skip: skip,
+      limit: limit,
+    );
   }
 }

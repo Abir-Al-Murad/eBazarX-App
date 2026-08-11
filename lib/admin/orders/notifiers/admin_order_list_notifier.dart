@@ -19,6 +19,7 @@ class AdminOrderListNotifier extends StateNotifier<AdminAllListState> {
         limit: limit,
         status: status,
       );
+
       state = state.copyWith(
         isLoading: false,
         items: skip == 0 ? orders : state.items + orders,

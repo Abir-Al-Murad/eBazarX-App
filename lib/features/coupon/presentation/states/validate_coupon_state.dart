@@ -5,7 +5,7 @@ import 'package:ebazarx/features/coupon/domain/entities/coupon_entity.dart';
 class ValidateCouponState {
   final bool isLoading;
   final Failure? failure;
-  final CouponEntity? coupon;
+  final CouponValidationEntity? coupon;
   final bool isValid;
 
   const ValidateCouponState({
@@ -18,7 +18,7 @@ class ValidateCouponState {
   ValidateCouponState copyWith({
     bool? isLoading,
     Failure? failure,
-    CouponEntity? coupon,
+    CouponValidationEntity? coupon,
     bool? isValid,
     bool clearFailure = false,
     bool clearCoupon = false,

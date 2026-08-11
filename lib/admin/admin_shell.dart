@@ -141,15 +141,14 @@ class _AdminSidebar extends ConsumerWidget {
                 _item(Icons.image_rounded, 'Banners', 3),
                 _item(Icons.category_rounded, 'Categories', 4),
 
+                _item(Icons.local_offer_rounded, 'Coupons', 5),
 
-                _item(Icons.store_rounded, 'Sellers', 5),
                 _item(Icons.people_alt_rounded, 'Users', 6),
 
 
                 _item(Icons.reviews_rounded, 'Reviews', 7),
 
-                _item(Icons.local_offer_rounded, 'Coupons', 8),
-
+                _item(Icons.store_rounded, 'Sellers', 8),
 
                 _item(Icons.analytics_rounded, 'Analytics', 9),
               ],

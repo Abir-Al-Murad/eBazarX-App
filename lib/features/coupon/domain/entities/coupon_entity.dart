@@ -1,19 +1,13 @@
-import 'package:equatable/equatable.dart';
-
-class CouponEntity  extends Equatable{
-  final String? id;
-  final bool valid;
+class CouponValidationEntity {
+  final String? couponId;
   final double discountAmount;
-  final String message;
+  final bool valid;
+  final String? message;
 
-  const CouponEntity({
-    required this.id,
-    required this.valid,
+  const CouponValidationEntity({
+    required this.couponId,
     required this.discountAmount,
+    required this.valid,
     required this.message,
   });
-
-  @override
-  List<Object?> get props => [id, valid, discountAmount, message];
-
 }

@@ -1,214 +1,155 @@
-
 import 'package:ebazarx/admin/categories/providers/admin_category_providers.dart';
 import 'package:ebazarx/admin/categories/states/admin_category_crud_state.dart';
+import 'package:ebazarx/admin/orders/providers/admin_order_providers.dart';
 import 'package:ebazarx/core/failures/failure.dart';
 import 'package:ebazarx/features/category/domain/usecases/create_category_usecase.dart';
 import 'package:ebazarx/features/category/domain/usecases/delete_category_usecase.dart';
 import 'package:ebazarx/features/category/domain/usecases/update_category_usecase.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class AdminCategoryCrudNotifier
-extends StateNotifier<AdminCategoryCrudState> {
+class AdminCategoryCrudNotifier extends StateNotifier<AdminCategoryCrudState> {
+  final Ref ref;
 
-final Ref ref;
+  late final CreateCategoryUseCase _createCategory;
+  late final UpdateCategoryUseCase _updateCategory;
+  late final DeleteCategoryUseCase _deleteCategory;
 
-late final CreateCategoryUseCase _createCategory;
-late final UpdateCategoryUseCase _updateCategory;
-late final DeleteCategoryUseCase _deleteCategory;
+  AdminCategoryCrudNotifier(this.ref) : super(const AdminCategoryCrudState()) {
+    _createCategory = ref.read(createCategoryUseCaseProvider);
 
-AdminCategoryCrudNotifier(this.ref)
-    : super(const AdminCategoryCrudState()) {
+    _updateCategory = ref.read(updateCategoryUseCaseProvider);
 
-_createCategory =
-ref.read(createCategoryUseCaseProvider);
+    _deleteCategory = ref.read(deleteCategoryUseCaseProvider);
+  }
 
-_updateCategory =
-ref.read(updateCategoryUseCaseProvider);
+  // ============================================================
+  // CREATE
+  // ============================================================
 
-_deleteCategory =
-ref.read(deleteCategoryUseCaseProvider);
-}
+  Future<bool> createCategory({
+    required String name,
+    required String slug,
+    String? description,
+    String? imageUrl,
+    String? parentId,
+  }) async {
+    state = state.copyWith(isCreating: true, clearFailure: true);
 
-// ============================================================
-// CREATE
-// ============================================================
+    try {
+      final category = await _createCategory(
+        name,
+        slug,
+        description,
+        imageUrl,
+        parentId,
+      );
 
-Future<bool> createCategory({
-required String name,
-required String slug,
-String? description,
-String? imageUrl,
-String? parentId,
-}) async {
+      state = state.copyWith(
+        isCreating: false,
+        category: category,
+        clearFailure: true,
+      );
 
-state = state.copyWith(
-isCreating: true,
-clearFailure: true,
-);
+      return true;
+    } on Failure catch (e) {
+      state = state.copyWith(isCreating: false, failure: e);
 
-try {
+      return false;
+    } catch (e) {
+      state = state.copyWith(
+        isCreating: false,
+        failure: UnknownFailure(e.toString()),
+      );
 
-final category = await _createCategory(
-name,
-slug,
-description,
-imageUrl,
-parentId,
-);
+      return false;
+    }
+  }
 
-state = state.copyWith(
-isCreating: false,
-category: category,
-clearFailure: true,
-);
+  // ============================================================
+  // UPDATE
+  // ============================================================
 
-return true;
+  Future<bool> updateCategory({
+    required String id,
+    required String name,
+    required String slug,
+    String? description,
+    String? imageUrl,
+    String? parentId,
+  }) async {
+    state = state.copyWith(isUpdating: true, clearFailure: true);
 
-} on Failure catch (e) {
+    try {
+      final updatedCategory = await _updateCategory(
+        name,
+        slug,
+        description,
+        imageUrl,
+        parentId,
+        id,
+      );
 
-state = state.copyWith(
-isCreating: false,
-failure: e,
-);
+      state = state.copyWith(
+        isUpdating: false,
+        category: updatedCategory,
+        clearFailure: true,
+      );
 
-return false;
+      return true;
+    } on Failure catch (e) {
+      state = state.copyWith(isUpdating: false, failure: e);
 
-} catch (e) {
+      return false;
+    } catch (e) {
+      state = state.copyWith(
+        isUpdating: false,
+        failure: UnknownFailure(e.toString()),
+      );
 
-state = state.copyWith(
-isCreating: false,
-failure: UnknownFailure(
-e.toString(),
-),
-);
+      return false;
+    }
+  }
 
-return false;
-}
-}
+  // ============================================================
+  // DELETE
+  // ============================================================
 
-// ============================================================
-// UPDATE
-// ============================================================
+  Future<bool> deleteCategory(String id) async {
+    state = state.copyWith(isDeleting: true, clearFailure: true);
 
-Future<bool> updateCategory({
-required String id,
-required String name,
-required String slug,
-String? description,
-String? imageUrl,
-String? parentId,
-}) async {
+    try {
+      await _deleteCategory(id);
 
-state = state.copyWith(
-isUpdating: true,
-clearFailure: true,
-);
+      state = state.copyWith(isDeleting: false, clearFailure: true);
 
-try {
+      return true;
+    } on Failure catch (e) {
+      state = state.copyWith(isDeleting: false, failure: e);
 
-final updatedCategory =
-await _updateCategory(
-name,
-slug,
-description,
-imageUrl,
-parentId,
-id,
-);
+      return false;
+    } catch (e) {
+      state = state.copyWith(
+        isDeleting: false,
+        failure: UnknownFailure(e.toString()),
+      );
 
-state = state.copyWith(
-isUpdating: false,
-category: updatedCategory,
-clearFailure: true,
-);
+      return false;
+    }
+  }
 
-return true;
+  // ============================================================
+  // CLEAR FAILURE
+  // ============================================================
 
-} on Failure catch (e) {
+  void clearFailure() {
+    state = state.copyWith(clearFailure: true);
+  }
 
-state = state.copyWith(
-isUpdating: false,
-failure: e,
-);
+  // ============================================================
+  // CLEAR STATE
+  // ============================================================
 
-return false;
-
-} catch (e) {
-
-state = state.copyWith(
-isUpdating: false,
-failure: UnknownFailure(
-e.toString(),
-),
-);
-
-return false;
-}
-}
-
-// ============================================================
-// DELETE
-// ============================================================
-
-Future<bool> deleteCategory(
-String id,
-) async {
-
-state = state.copyWith(
-isDeleting: true,
-clearFailure: true,
-);
-
-try {
-
-await _deleteCategory(id);
-
-state = state.copyWith(
-isDeleting: false,
-clearFailure: true,
-);
-
-return true;
-
-} on Failure catch (e) {
-
-state = state.copyWith(
-isDeleting: false,
-failure: e,
-);
-
-return false;
-
-} catch (e) {
-
-state = state.copyWith(
-isDeleting: false,
-failure: UnknownFailure(
-e.toString(),
-),
-);
-
-return false;
-}
-}
-
-// ============================================================
-// CLEAR FAILURE
-// ============================================================
-
-void clearFailure() {
-
-state = state.copyWith(
-clearFailure: true,
-);
-}
-
-// ============================================================
-// CLEAR STATE
-// ============================================================
-
-void clear() {
-
-state = const AdminCategoryCrudState();
-}
+  void clear() {
+    state = const AdminCategoryCrudState();
+  }
 }

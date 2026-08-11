@@ -4,7 +4,11 @@ import 'package:ebazarx/admin/banners/screens/admin_banner_form_screen.dart';
 import 'package:ebazarx/admin/banners/screens/admin_banner_list_screen.dart';
 import 'package:ebazarx/admin/categories/screens/admin_category_form_screen.dart';
 import 'package:ebazarx/admin/categories/screens/admin_category_list_screen.dart';
+import 'package:ebazarx/admin/coupons/screens/admin_coupon_form_screen.dart';
+import 'package:ebazarx/admin/coupons/screens/admin_coupon_list_screen.dart';
 import 'package:ebazarx/admin/dashboard/screens/admin_dashboard_screen.dart';
+import 'package:ebazarx/admin/flash_sale/screens/admin_flash_sale_form_screen.dart';
+import 'package:ebazarx/admin/flash_sale/screens/admin_flash_sale_list_screen.dart';
 import 'package:ebazarx/admin/orders/screens/admin_order_details_screen.dart';
 import 'package:ebazarx/admin/orders/screens/admin_orders_screen.dart';
 import 'package:ebazarx/admin/products/screens/admin_product_screen.dart';
@@ -17,6 +21,8 @@ import 'package:ebazarx/features/auth/presentation/screens/login_screen.dart';
 import 'package:ebazarx/features/auth/presentation/screens/registration_screen.dart';
 import 'package:ebazarx/features/banner/domain/entities/banner.dart';
 import 'package:ebazarx/features/category/domain/entities/category_entity.dart';
+import 'package:ebazarx/features/coupon/domain/entities/admin_coupon_entity.dart';
+import 'package:ebazarx/features/flash_sale/domain/entities/flash_sale_entity.dart';
 import 'package:ebazarx/features/order/domain/entities/checkout_item_entity.dart';
 import 'package:ebazarx/features/order/presentation/screens/check_out_screen.dart';
 import 'package:ebazarx/features/order/presentation/screens/order_details_screen.dart';
@@ -53,6 +59,8 @@ class AppRoutes {
   static final _adminOrderNavKey  = GlobalKey<NavigatorState>();
   static final _adminBannerNavKey  = GlobalKey<NavigatorState>();
   static final _adminCategoryNavKey  = GlobalKey<NavigatorState>();
+  static final _adminCouponNavKey  = GlobalKey<NavigatorState>();
+  static final _adminFlashSaleNavKey  = GlobalKey<NavigatorState>();
 
   // Optional: you can also keep separate keys for other features if needed
 
@@ -227,6 +235,37 @@ class AppRoutes {
                 path: '/admin/categories/create',
                 name: AppRoutesName.adminCategoryForm,
                 builder: (context, state) =>  AdminCategoryFormScreen(category: state.extra as Category?),
+              ),
+            ],
+          ),
+
+          StatefulShellBranch(
+            navigatorKey: _adminCouponNavKey,
+            routes: [
+              GoRoute(
+                path: '/admin/coupons',
+                name: AppRoutesName.adminCoupons,
+                builder: (context, state) => const AdminCouponListScreen(),
+              ),
+              GoRoute(
+                path: '/admin/coupons/form',
+                name: AppRoutesName.adminCouponForm,
+                builder: (context, state) =>  AdminCouponFormScreen(coupon: state.extra as AdminCouponEntity?),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            navigatorKey: _adminFlashSaleNavKey,
+            routes: [
+              GoRoute(
+                path: '/admin/flash-sale',
+                name: AppRoutesName.adminFlashSale,
+                builder: (context, state) => const AdminFlashSaleListScreen(),
+              ),
+              GoRoute(
+                path: '/admin/flash-sale/form',
+                name: AppRoutesName.adminFlashSaleForm,
+                builder: (context, state) =>  AdminFlashSaleFormScreen(flashSale: state.extra as FlashSale?),
               ),
             ],
           ),
