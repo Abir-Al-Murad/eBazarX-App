@@ -12,6 +12,8 @@ import 'package:ebazarx/admin/flash_sale/screens/admin_flash_sale_list_screen.da
 import 'package:ebazarx/admin/orders/screens/admin_order_details_screen.dart';
 import 'package:ebazarx/admin/orders/screens/admin_orders_screen.dart';
 import 'package:ebazarx/admin/products/screens/admin_product_screen.dart';
+import 'package:ebazarx/admin/reviews/screens/admin_review_details_screen.dart';
+import 'package:ebazarx/admin/reviews/screens/admin_review_list_screen.dart';
 import 'package:ebazarx/admin/sellers/domain/entities/seller_entity.dart';
 import 'package:ebazarx/admin/sellers/presentation/screens/admin_seller_detail_screen.dart';
 import 'package:ebazarx/admin/sellers/presentation/screens/admin_seller_list_screen.dart';
@@ -65,6 +67,7 @@ class AppRoutes {
   static final _adminCouponNavKey  = GlobalKey<NavigatorState>();
   static final _adminFlashSaleNavKey  = GlobalKey<NavigatorState>();
   static final _adminSellerNavKey  = GlobalKey<NavigatorState>();
+  static final _adminReviewNavKey  = GlobalKey<NavigatorState>();
 
   // Optional: you can also keep separate keys for other features if needed
 
@@ -286,6 +289,21 @@ class AppRoutes {
                 path: '/admin/sellers/details',
                 name: AppRoutesName.adminSellerDetailsScreen,
                 builder: (context, state) =>  AdminSellerDetailScreen(seller: state.extra as SellerEntity),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            navigatorKey: _adminReviewNavKey,
+            routes: [
+              GoRoute(
+                path: '/admin/reviews',
+                name: AppRoutesName.adminReviewsScreen,
+                builder: (context, state) => const AdminReviewListScreen(),
+              ),
+              GoRoute(
+                path: '/admin/reviews/details',
+                name: AppRoutesName.adminReviewDetailsScreen,
+                builder: (context, state) =>  AdminReviewDetailScreen(reviewId: state.extra as String),
               ),
             ],
           ),

@@ -16,10 +16,8 @@ import 'package:ebazarx/features/reviews/domain/usecases/reply_review_usecase.da
 import 'package:ebazarx/features/reviews/domain/usecases/report_review_usecase.dart';
 import 'package:ebazarx/features/reviews/domain/usecases/update_review_usecase.dart';
 import 'package:ebazarx/features/reviews/domain/usecases/vote_review_usecase.dart';
-import 'package:ebazarx/features/reviews/presentation/notifiers/admin_review_notifier.dart';
 import 'package:ebazarx/features/reviews/presentation/notifiers/customer_review_notifier.dart';
 import 'package:ebazarx/features/reviews/presentation/notifiers/seller_review_notifier.dart';
-import 'package:ebazarx/features/reviews/presentation/states/admin_review_state.dart';
 import 'package:ebazarx/features/reviews/presentation/states/customer_review_state.dart';
 import 'package:ebazarx/features/reviews/presentation/states/seller_review_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -120,17 +118,3 @@ final sellerReviewNotifierProvider =
       );
     });
 
-/// =======================================================
-/// Admin
-/// =======================================================
-
-final adminReviewNotifierProvider =
-    StateNotifierProvider<AdminReviewNotifier, AdminReviewState>((ref) {
-      return AdminReviewNotifier(
-        ref.read(adminListReviewsUseCaseProvider),
-        ref.read(adminDeleteReviewUseCaseProvider),
-        ref.read(adminToggleHideReviewUseCaseProvider),
-        ref.read(adminListPendingReportsUseCaseProvider),
-        ref.read(adminResolveReportUseCaseProvider),
-      );
-    });

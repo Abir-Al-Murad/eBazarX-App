@@ -1,87 +1,72 @@
 import 'package:equatable/equatable.dart';
 
-import '../../../../core/failures/failure.dart';
-import '../../domain/entities/review_entity.dart';
-import '../../domain/entities/review_report_entity.dart';
+import '../../../core/failures/failure.dart';
+import '../../../features/reviews/domain/entities/review_entity.dart';
+import '../../../features/reviews/domain/entities/review_report_entity.dart';
 
-class AdminReviewState extends Equatable {
-  //==================================================
-  // Loading
-  //==================================================
+class AdminReviewListState extends Equatable {
+  // ============================================================
+  // REVIEW LOADING
+  // ============================================================
 
   final bool isLoadingReviews;
   final bool isLoadingMoreReviews;
+  final bool isRefreshingReviews;
+
+  // ============================================================
+  // REPORT LOADING
+  // ============================================================
 
   final bool isLoadingReports;
   final bool isLoadingMoreReports;
+  final bool isRefreshingReports;
 
-  final bool isRefreshing;
-
-  final bool isDeleting;
-
-  final bool isHiding;
-
-  final bool isResolvingReport;
-
-  //==================================================
-  // Review Pagination
-  //==================================================
+  // ============================================================
+  // REVIEW PAGINATION
+  // ============================================================
 
   final int reviewSkip;
-
   final int reviewLimit;
-
   final bool hasMoreReviews;
 
-  //==================================================
-  // Report Pagination
-  //==================================================
+  // ============================================================
+  // REPORT PAGINATION
+  // ============================================================
 
   final int reportSkip;
-
   final int reportLimit;
-
   final bool hasMoreReports;
 
-  //==================================================
-  // Filters
-  //==================================================
+  // ============================================================
+  // FILTERS
+  // ============================================================
 
   final String? productId;
-
   final String? userId;
-
   final bool? isHidden;
-
   final bool? includeDeleted;
 
-  //==================================================
-  // Data
-  //==================================================
+  // ============================================================
+  // DATA
+  // ============================================================
 
   final List<ReviewEntity> reviews;
-
   final List<ReviewReportEntity> reports;
 
-  final ReviewEntity? selectedReview;
-
-  final ReviewReportEntity? selectedReport;
-
-  //==================================================
-  // Error
-  //==================================================
+  // ============================================================
+  // ERROR
+  // ============================================================
 
   final Failure? failure;
 
-  const AdminReviewState({
+  const AdminReviewListState({
     this.isLoadingReviews = false,
     this.isLoadingMoreReviews = false,
+    this.isRefreshingReviews = false,
+
     this.isLoadingReports = false,
     this.isLoadingMoreReports = false,
-    this.isRefreshing = false,
-    this.isDeleting = false,
-    this.isHiding = false,
-    this.isResolvingReport = false,
+    this.isRefreshingReports = false,
 
     this.reviewSkip = 0,
     this.reviewLimit = 20,
@@ -99,21 +84,28 @@ class AdminReviewState extends Equatable {
     this.reviews = const [],
     this.reports = const [],
 
-    this.selectedReview,
-    this.selectedReport,
-
     this.failure,
   });
 
-  AdminReviewState copyWith({
+  bool get isLoading =>
+      isLoadingReviews || isLoadingReports;
+
+  bool get isLoadingMore =>
+      isLoadingMoreReviews || isLoadingMoreReports;
+
+  bool get isRefreshing =>
+      isRefreshingReviews || isRefreshingReports;
+
+  bool get isFailure => failure != null;
+
+  AdminReviewListState copyWith({
     bool? isLoadingReviews,
     bool? isLoadingMoreReviews,
+    bool? isRefreshingReviews,
+
     bool? isLoadingReports,
     bool? isLoadingMoreReports,
-    bool? isRefreshing,
-    bool? isDeleting,
-    bool? isHiding,
-    bool? isResolvingReport,
+    bool? isRefreshingReports,
 
     int? reviewSkip,
     int? reviewLimit,
@@ -131,21 +123,23 @@ class AdminReviewState extends Equatable {
     List<ReviewEntity>? reviews,
     List<ReviewReportEntity>? reports,
 
-    ReviewEntity? selectedReview,
-    ReviewReportEntity? selectedReport,
-
     Failure? failure,
 
     bool clearFailure = false,
-    bool clearSelectedReview = false,
-    bool clearSelectedReport = false,
+    bool clearProductId = false,
+    bool clearUserId = false,
+    bool clearIsHidden = false,
+    bool clearIncludeDeleted = false,
   }) {
-    return AdminReviewState(
+    return AdminReviewListState(
       isLoadingReviews:
       isLoadingReviews ?? this.isLoadingReviews,
 
       isLoadingMoreReviews:
       isLoadingMoreReviews ?? this.isLoadingMoreReviews,
+
+      isRefreshingReviews:
+      isRefreshingReviews ?? this.isRefreshingReviews,
 
       isLoadingReports:
       isLoadingReports ?? this.isLoadingReports,
@@ -153,17 +147,8 @@ class AdminReviewState extends Equatable {
       isLoadingMoreReports:
       isLoadingMoreReports ?? this.isLoadingMoreReports,
 
-      isRefreshing:
-      isRefreshing ?? this.isRefreshing,
-
-      isDeleting:
-      isDeleting ?? this.isDeleting,
-
-      isHiding:
-      isHiding ?? this.isHiding,
-
-      isResolvingReport:
-      isResolvingReport ?? this.isResolvingReport,
+      isRefreshingReports:
+      isRefreshingReports ?? this.isRefreshingReports,
 
       reviewSkip:
       reviewSkip ?? this.reviewSkip,
@@ -183,17 +168,21 @@ class AdminReviewState extends Equatable {
       hasMoreReports:
       hasMoreReports ?? this.hasMoreReports,
 
-      productId:
-      productId ?? this.productId,
+      productId: clearProductId
+          ? null
+          : productId ?? this.productId,
 
-      userId:
-      userId ?? this.userId,
+      userId: clearUserId
+          ? null
+          : userId ?? this.userId,
 
-      isHidden:
-      isHidden ?? this.isHidden,
+      isHidden: clearIsHidden
+          ? null
+          : isHidden ?? this.isHidden,
 
-      includeDeleted:
-      includeDeleted ?? this.includeDeleted,
+      includeDeleted: clearIncludeDeleted
+          ? null
+          : includeDeleted ?? this.includeDeleted,
 
       reviews:
       reviews ?? this.reviews,
@@ -201,17 +190,9 @@ class AdminReviewState extends Equatable {
       reports:
       reports ?? this.reports,
 
-      selectedReview: clearSelectedReview
-          ? null
-          : (selectedReview ?? this.selectedReview),
-
-      selectedReport: clearSelectedReport
-          ? null
-          : (selectedReport ?? this.selectedReport),
-
       failure: clearFailure
           ? null
-          : (failure ?? this.failure),
+          : failure ?? this.failure,
     );
   }
 
@@ -219,12 +200,11 @@ class AdminReviewState extends Equatable {
   List<Object?> get props => [
     isLoadingReviews,
     isLoadingMoreReviews,
+    isRefreshingReviews,
+
     isLoadingReports,
     isLoadingMoreReports,
-    isRefreshing,
-    isDeleting,
-    isHiding,
-    isResolvingReport,
+    isRefreshingReports,
 
     reviewSkip,
     reviewLimit,
@@ -241,9 +221,6 @@ class AdminReviewState extends Equatable {
 
     reviews,
     reports,
-
-    selectedReview,
-    selectedReport,
 
     failure,
   ];
