@@ -1,10 +1,17 @@
 import 'package:ebazarx/admin/dashboard/providers/admin_dashboard_providers.dart';
+import 'package:ebazarx/admin/dashboard/widgets/recent_orders_card.dart';
+import 'package:ebazarx/admin/dashboard/widgets/revenue_card.dart';
+import 'package:ebazarx/admin/dashboard/widgets/top_products_card.dart';
+import 'package:ebazarx/admin/dashboard/widgets/top_seller_card.dart';
+import 'package:ebazarx/common/widgets/error_view.dart';
+import 'package:ebazarx/common/widgets/page_loading_container.dart';
+import 'package:ebazarx/common/widgets/section_tile.dart';
 import 'package:ebazarx/common/widgets/state_card.dart';
 import 'package:ebazarx/core/utils/responsive.dart';
-import 'package:ebazarx/features/dashboard/domain/entities/admin_recent_order.dart';
 import 'package:ebazarx/features/dashboard/domain/entities/admin_revenue.dart';
 import 'package:ebazarx/features/dashboard/domain/entities/admin_top_product.dart';
 import 'package:ebazarx/features/dashboard/domain/entities/admin_top_seller.dart';
+import 'package:ebazarx/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -31,89 +38,87 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     final dashboard = state.stats;
 
     return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: state.isLoading
-          ? const _LoadingView()
+          ? const LoadingContainer()
           : state.failure != null
-          ? _ErrorView(
-              message: state.failure!.message,
-              onRetry: () {
-                ref
-                    .read(adminDashboardNotifierProvider.notifier)
-                    .loadDashboard();
-              },
-            )
+          ? ErrorView(
+        failure: state.failure!,
+        onRetry: () {
+          ref
+              .read(adminDashboardNotifierProvider.notifier)
+              .loadDashboard();
+        },
+      )
           : RefreshIndicator(
-              onRefresh: () async {
-                await ref
-                    .read(adminDashboardNotifierProvider.notifier)
-                    .loadDashboard();
-              },
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _DashboardHeader(),
-                    const SizedBox(height: 24),
-                    _StatsGrid(
-                      totalOrders: dashboard?.totalOrders ?? 0,
-                      totalRevenue: dashboard?.totalRevenue ?? 0.0,
-                      totalProducts: dashboard?.totalProducts ?? 0,
-                      totalCustomers: dashboard?.totalCustomers ?? 0,
-                      totalSellers: dashboard?.totalSellers ?? 0,
-                      pendingOrders: dashboard?.pendingOrders ?? 0,
-                      completedOrders: dashboard?.completedOrders ?? 0,
-                      cancelledOrders: dashboard?.cancelledOrders ?? 0,
-                      pendingSellers: dashboard?.pendingSellers ?? 0,
-                      pendingProducts: dashboard?.pendingProducts ?? 0,
-                      todayOrders: dashboard?.todayOrders ?? 0,
-                      todayRevenue: dashboard?.todayRevenue ?? 0.0,
-                    ),
-                    const SizedBox(height: 28),
-                    const _SectionTitle(
-                      title: 'Recent Orders',
-                      subtitle: 'Latest orders from customers',
-                    ),
-                    const SizedBox(height: 12),
-                    _RecentOrdersCard(orders: state.recentOrders),
-                    const SizedBox(height: 28),
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        if (constraints.maxWidth >= 900) {
-                          return Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: _TopProductsCard(
-                                  products: state.topProducts,
-                                ),
-                              ),
-                              const SizedBox(width: 20),
-                              Expanded(
-                                child: _TopSellersCard(
-                                  sellers: state.topSellers,
-                                ),
-                              ),
-                            ],
-                          );
-                        }
-                        return Column(
-                          children: [
-                            _TopProductsCard(products: state.topProducts),
-                            const SizedBox(height: 20),
-                            _TopSellersCard(sellers: state.topSellers),
-                          ],
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 28),
-                    _RevenueCard(revenue: state.revenue),
-                    const SizedBox(height: 30),
-                  ],
-                ),
+        onRefresh: () => ref
+            .read(adminDashboardNotifierProvider.notifier)
+            .loadDashboard(),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.all(context.paddingSizeLarge),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const _DashboardHeader(),
+              SizedBox(height: context.paddingSizeExtraLarge),
+              _StatsGrid(
+                totalOrders: dashboard?.totalOrders ?? 0,
+                totalRevenue: dashboard?.totalRevenue ?? 0.0,
+                totalProducts: dashboard?.totalProducts ?? 0,
+                totalCustomers: dashboard?.totalCustomers ?? 0,
+                totalSellers: dashboard?.totalSellers ?? 0,
+                pendingOrders: dashboard?.pendingOrders ?? 0,
+                completedOrders: dashboard?.completedOrders ?? 0,
+                cancelledOrders: dashboard?.cancelledOrders ?? 0,
+                pendingSellers: dashboard?.pendingSellers ?? 0,
+                pendingProducts: dashboard?.pendingProducts ?? 0,
+                todayOrders: dashboard?.todayOrders ?? 0,
+                todayRevenue: dashboard?.todayRevenue ?? 0.0,
               ),
-            ),
+              SizedBox(height: context.paddingSizeExtraLarge + 4),
+              const SectionTitle(
+                title: 'Recent Orders',
+                subtitle: 'Latest orders from customers',
+              ),
+              SizedBox(height: context.paddingSizeSmall),
+              RecentOrdersCard(orders: state.recentOrders),
+              SizedBox(height: context.paddingSizeExtraLarge + 4),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWide = constraints.maxWidth >= 900;
+                  final products = TopProductsCard(
+                    products: state.topProducts,
+                  );
+                  final sellers = TopSellersCard(
+                    sellers: state.topSellers,
+                  );
+                  if (isWide) {
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: products),
+                        SizedBox(width: context.paddingSizeDefault),
+                        Expanded(child: sellers),
+                      ],
+                    );
+                  }
+                  return Column(
+                    children: [
+                      products,
+                      SizedBox(height: context.paddingSizeDefault),
+                      sellers,
+                    ],
+                  );
+                },
+              ),
+              SizedBox(height: context.paddingSizeExtraLarge + 4),
+              RevenueCard(revenue: state.revenue),
+              SizedBox(height: context.paddingSizeExtraLarge),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -123,32 +128,47 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
 // ============================================================
 
 class _DashboardHeader extends StatelessWidget {
+  const _DashboardHeader();
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Row(
       children: [
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'Admin Dashboard',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontSize: context.fontSizeExtraLarge + 4,
+                ),
               ),
-              SizedBox(height: 6),
+              SizedBox(height: 4),
               Text(
                 'Overview of your eBazarX marketplace',
-                style: TextStyle(color: Colors.grey, fontSize: 15),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
         ),
-        // IconButton(
-        //   onPressed: () {},
-        //   icon: const Icon(Icons.notifications_none),
-        // ),
-        // const SizedBox(width: 8),
-        // const CircleAvatar(radius: 20, child: Icon(Icons.admin_panel_settings)),
+        Container(
+          padding: EdgeInsets.all(context.paddingSizeSmall),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.admin_panel_settings_rounded,
+            color: theme.colorScheme.primary,
+            size: 22,
+          ),
+        ),
       ],
     );
   }
@@ -193,74 +213,74 @@ class _StatsGrid extends StatelessWidget {
       StatCard(
         title: 'Total Revenue',
         value: '৳${totalRevenue.toStringAsFixed(2)}',
-        icon: Icons.payments,
-        color: Colors.green,
-      ),
-      StatCard(
-        title: 'Total Orders',
-        value: '$totalOrders',
-        icon: Icons.shopping_cart,
-        color: Colors.blue,
-      ),
-      StatCard(
-        title: 'Products',
-        value: '$totalProducts',
-        icon: Icons.inventory_2,
-        color: Colors.orange,
-      ),
-      StatCard(
-        title: 'Customers',
-        value: '$totalCustomers',
-        icon: Icons.people,
-        color: Colors.purple,
-      ),
-      StatCard(
-        title: 'Sellers',
-        value: '$totalSellers',
-        icon: Icons.store,
-        color: Colors.teal,
-      ),
-      StatCard(
-        title: 'Pending Orders',
-        value: '$pendingOrders',
-        icon: Icons.pending_actions,
-        color: Colors.amber,
-      ),
-      StatCard(
-        title: 'Pending Products',
-        value: '$pendingProducts',
-        icon: Icons.pending,
-        color: Colors.red,
-      ),
-      StatCard(
-        title: 'Pending Sellers',
-        value: '$pendingSellers',
-        icon: Icons.person_search,
-        color: Colors.deepOrange,
-      ),
-      StatCard(
-        title: 'Completed Orders',
-        value: '$completedOrders',
-        icon: Icons.check_circle,
-        color: Colors.green,
-      ),
-      StatCard(
-        title: 'Cancelled Orders',
-        value: '$cancelledOrders',
-        icon: Icons.cancel,
-        color: Colors.red,
-      ),
-      StatCard(
-        title: "Today's Orders",
-        value: '$todayOrders',
-        icon: Icons.today,
-        color: Colors.cyan,
+        icon: Icons.payments_rounded,
+        color: AppColors.success,
       ),
       StatCard(
         title: "Today's Revenue",
         value: '৳${todayRevenue.toStringAsFixed(2)}',
-        icon: Icons.trending_up,
-        color: Colors.green,
+        icon: Icons.trending_up_rounded,
+        color: AppColors.success,
+      ),
+      StatCard(
+        title: 'Total Orders',
+        value: '$totalOrders',
+        icon: Icons.shopping_cart_rounded,
+        color: AppColors.pending,
+      ),
+      StatCard(
+        title: "Today's Orders",
+        value: '$todayOrders',
+        icon: Icons.today_rounded,
+        color: AppColors.draft,
+      ),
+      StatCard(
+        title: 'Completed Orders',
+        value: '$completedOrders',
+        icon: Icons.check_circle_rounded,
+        color: AppColors.success,
+      ),
+      StatCard(
+        title: 'Pending Orders',
+        value: '$pendingOrders',
+        icon: Icons.pending_actions_rounded,
+        color: AppColors.warning,
+      ),
+      StatCard(
+        title: 'Cancelled Orders',
+        value: '$cancelledOrders',
+        icon: Icons.cancel_rounded,
+        color: AppColors.error,
+      ),
+      StatCard(
+        title: 'Products',
+        value: '$totalProducts',
+        icon: Icons.inventory_2_rounded,
+        color: AppColors.pending,
+      ),
+      StatCard(
+        title: 'Pending Products',
+        value: '$pendingProducts',
+        icon: Icons.hourglass_bottom_rounded,
+        color: AppColors.warning,
+      ),
+      StatCard(
+        title: 'Customers',
+        value: '$totalCustomers',
+        icon: Icons.people_rounded,
+        color: AppColors.archived,
+      ),
+      StatCard(
+        title: 'Sellers',
+        value: '$totalSellers',
+        icon: Icons.store_rounded,
+        color: AppColors.draft,
+      ),
+      StatCard(
+        title: 'Pending Sellers',
+        value: '$pendingSellers',
+        icon: Icons.person_search_rounded,
+        color: AppColors.outOfStock,
       ),
     ];
 
@@ -269,409 +289,17 @@ class _StatsGrid extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       itemCount: cards.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: context.isDesktop
-            ? 4
-            : context.isTablet
-            ? 3
-            : 2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
+        crossAxisCount: context.responsive<int>(
+          mobile: 2,
+          tablet: 3,
+          desktop: 4,
+        ),
+        crossAxisSpacing: context.paddingSizeDefault,
+        mainAxisSpacing: context.paddingSizeDefault,
         childAspectRatio: 2.1,
       ),
-      itemBuilder: (context, index) {
-        return cards[index];
-      },
+      itemBuilder: (context, index) => cards[index],
     );
   }
 }
 
-// ============================================================
-// SECTION TITLE
-// ============================================================
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.title, required this.subtitle});
-
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 4),
-        Text(subtitle, style: const TextStyle(color: Colors.grey)),
-      ],
-    );
-  }
-}
-
-// ============================================================
-// RECENT ORDERS
-// ============================================================
-
-class _RecentOrdersCard extends StatelessWidget {
-  const _RecentOrdersCard({required this.orders});
-
-  final List<AdminRecentOrder> orders;
-
-  @override
-  Widget build(BuildContext context) {
-    if (orders.isEmpty) {
-      return const _EmptyCard(message: 'No recent orders');
-    }
-
-    return Card(
-      elevation: 0,
-      child: ListView.separated(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: orders.length,
-        separatorBuilder: (_, __) => const Divider(height: 1),
-        itemBuilder: (context, index) {
-          final order = orders[index];
-
-          return ListTile(
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 6,
-            ),
-            leading: CircleAvatar(child: Text('${index + 1}')),
-            title: Text(
-              '#${order.id.substring(0, 8).toUpperCase()}', // Use order ID
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            subtitle: Text(order.customerName ?? 'Guest Customer'),
-            trailing: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '৳${order.grandTotal.toStringAsFixed(2)}',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 4),
-                _StatusChip(status: order.orderStatus),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-// ============================================================
-// TOP PRODUCTS
-// ============================================================
-
-class _TopProductsCard extends StatelessWidget {
-  const _TopProductsCard({required this.products});
-
-  final List<AdminTopProduct> products;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Top Products',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 15),
-            if (products.isEmpty)
-              const _EmptyCard(message: 'No product data')
-            else
-              ...products.map(
-                (product) => ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const CircleAvatar(child: Icon(Icons.inventory_2)),
-                  title: Text(
-                    product.productName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  subtitle: Text('${product.totalSales} sales'),
-                  trailing: Text(
-                    '৳${product.revenue.toStringAsFixed(2)}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ============================================================
-// TOP SELLERS
-// ============================================================
-
-class _TopSellersCard extends StatelessWidget {
-  const _TopSellersCard({required this.sellers});
-
-  final List<AdminTopSeller> sellers;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Top Sellers',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 15),
-            if (sellers.isEmpty)
-              const _EmptyCard(message: 'No seller data')
-            else
-              ...sellers.map(
-                (seller) => ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const CircleAvatar(child: Icon(Icons.store)),
-                  title: Text(
-                    seller.shopName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  subtitle: Text('${seller.totalOrders} orders'),
-                  trailing: Text(
-                    '৳${seller.totalRevenue.toStringAsFixed(2)}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ============================================================
-// REVENUE
-// ============================================================
-
-class _RevenueCard extends StatelessWidget {
-  const _RevenueCard({required this.revenue});
-
-  final List<AdminRevenue> revenue;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Revenue Overview',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Revenue and orders for the selected period',
-              style: TextStyle(color: Colors.grey),
-            ),
-            const SizedBox(height: 20),
-            if (revenue.isEmpty)
-              const SizedBox(
-                height: 120,
-                child: Center(
-                  child: Text(
-                    'No revenue data available',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
-              )
-            else
-              SizedBox(
-                height: 220,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: revenue.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 12),
-                  itemBuilder: (context, index) {
-                    final item = revenue[index];
-                    return Container(
-                      width: 120,
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        color: Colors.blue.withOpacity(.06),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            item.period,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: Colors.grey),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            '৳${item.revenue.toStringAsFixed(0)}',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 17,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            '${item.orders} orders',
-                            style: const TextStyle(
-                              color: Colors.grey,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ============================================================
-// STATUS CHIP
-// ============================================================
-
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.status});
-
-  final String status;
-
-  @override
-  Widget build(BuildContext context) {
-    Color? bgColor;
-    Color? textColor;
-    switch (status.toLowerCase()) {
-      case 'pending':
-        bgColor = Colors.orange.shade50;
-        textColor = Colors.orange;
-        break;
-      case 'processing':
-        bgColor = Colors.blue.shade50;
-        textColor = Colors.blue;
-        break;
-      case 'shipped':
-        bgColor = Colors.purple.shade50;
-        textColor = Colors.purple;
-        break;
-      case 'delivered':
-        bgColor = Colors.green.shade50;
-        textColor = Colors.green;
-        break;
-      case 'cancelled':
-        bgColor = Colors.red.shade50;
-        textColor = Colors.red;
-        break;
-      default:
-        bgColor = Colors.grey.shade50;
-        textColor = Colors.grey;
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        status,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: textColor,
-        ),
-      ),
-    );
-  }
-}
-
-// ============================================================
-// EMPTY
-// ============================================================
-
-class _EmptyCard extends StatelessWidget {
-  const _EmptyCard({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 100,
-      child: Center(
-        child: Text(message, style: const TextStyle(color: Colors.grey)),
-      ),
-    );
-  }
-}
-
-// ============================================================
-// LOADING
-// ============================================================
-
-class _LoadingView extends StatelessWidget {
-  const _LoadingView();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: CircularProgressIndicator());
-  }
-}
-
-// ============================================================
-// ERROR
-// ============================================================
-
-class _ErrorView extends StatelessWidget {
-  const _ErrorView({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 50, color: Colors.red),
-            const SizedBox(height: 12),
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 15),
-            ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
-          ],
-        ),
-      ),
-    );
-  }
-}

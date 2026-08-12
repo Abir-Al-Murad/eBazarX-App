@@ -34,29 +34,51 @@ class AdminDashboardNotifier extends StateNotifier<AdminDashboardState> {
   // ===========================================================
 
   Future<void> loadDashboard() async {
-    state = state.copyWith(isLoading: true, clearFailure: true);
+    state = state.copyWith(
+      isLoading: true,
+      clearFailure: true,
+    );
 
     try {
-      final results = await Future.wait([
-        _getDashboard(),
-        _getRecentOrders(),
-        _getTopSellers(),
-        _getTopProducts(),
-        _getRevenue(),
-      ]);
+      print('1. Loading dashboard');
+
+      final dashboard = await _getDashboard();
+      print('2. Dashboard success');
+
+      final recentOrders = await _getRecentOrders();
+      print('3. Recent orders success');
+
+      final topSellers = await _getTopSellers();
+      print('4. Top sellers success');
+
+      final topProducts = await _getTopProducts();
+      print('5. Top products success');
+
+      final revenue = await _getRevenue();
+      print('6. Revenue success');
 
       state = state.copyWith(
         isLoading: false,
-        stats: results[0] as dynamic,
-        recentOrders: results[1] as dynamic,
-        topSellers: results[2] as dynamic,
-        topProducts: results[3] as dynamic,
-        revenue: results[4] as dynamic,
+        stats: dashboard,
+        recentOrders: recentOrders,
+        topSellers: topSellers,
+        topProducts: topProducts,
+        revenue: revenue,
         clearFailure: true,
       );
+
+      print('7. Dashboard state SUCCESS');
+      print('failure = ${state.failure}');
     } on Failure catch (e) {
-      state = state.copyWith(isLoading: false, failure: e);
+      print('FAILURE: $e');
+
+      state = state.copyWith(
+        isLoading: false,
+        failure: e,
+      );
     } catch (e) {
+      print('UNKNOWN ERROR: $e');
+
       state = state.copyWith(
         isLoading: false,
         failure: UnknownFailure(e.toString()),

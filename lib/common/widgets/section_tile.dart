@@ -1,17 +1,25 @@
 import 'package:flutter/material.dart';
 
 class SectionTitle extends StatelessWidget {
-  final String title;
+  const SectionTitle({required this.title, this.subtitle});
 
-  const SectionTitle({super.key, required this.title});
+  final String title;
+  final String? subtitle;
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-        fontWeight: FontWeight.bold,
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 4),
+        if (subtitle != null)
+          Text(subtitle!, style: const TextStyle(color: Colors.grey)),
+
+      ],
     );
   }
 }
