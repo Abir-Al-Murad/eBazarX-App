@@ -37,6 +37,8 @@ import 'package:ebazarx/features/product/presentation/screens/product_details_sc
 import 'package:ebazarx/features/reviews/presentation/screens/review_screen.dart';
 import 'package:ebazarx/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:ebazarx/features/splash/presentation/screens/splash_screen.dart';
+import 'package:ebazarx/seller/coupons/screens/seller_coupon_form_screen.dart';
+import 'package:ebazarx/seller/coupons/screens/seller_list_screen.dart';
 import 'package:ebazarx/seller/dashborad/screens/seller_dashboard_screen.dart';
 import 'package:ebazarx/seller/orders/screens/seller_orders_screen.dart';
 import 'package:ebazarx/seller/products/screens/add_product_screen.dart';
@@ -57,6 +59,7 @@ class AppRoutes {
   static final _sellerDashboardNavKey = GlobalKey<NavigatorState>();
   static final _sellerProductsNavKey  = GlobalKey<NavigatorState>();
   static final _sellerOrdersNavKey    = GlobalKey<NavigatorState>();
+  static final _sellerCouponNavKey    = GlobalKey<NavigatorState>();
 
   // Admin shell branch navigators (only one now, but ready for more)
   static final _adminDashboardNavKey  = GlobalKey<NavigatorState>();
@@ -165,6 +168,21 @@ class AppRoutes {
                 path: '/seller/orders',
                 name: AppRoutesName.orders,
                 builder: (context, state) => const SellerOrdersScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            navigatorKey: _sellerCouponNavKey,
+            routes: [
+              GoRoute(
+                path: '/seller/coupons',
+                name: AppRoutesName.sellerCoupons,
+                builder: (context, state) => const SellerCouponListScreen(),
+              ),
+              GoRoute(
+                path: '/seller/coupons/create',
+                name: AppRoutesName.sellerCouponForm,
+                builder: (context, state) =>  SellerCouponFormScreen(couponId: state.extra as String?,),
               ),
             ],
           ),

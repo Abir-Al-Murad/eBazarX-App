@@ -55,6 +55,8 @@ class AppRoutesName{
   static const String sellerShell = "/sellerShell";
   static const String sellerDashboard = "/sellerDashboard";
   static const String sellerOrders = "/sellerOrders";
+  static const String sellerCoupons = "/sellerCoupons";
+  static const String sellerCouponForm = "/sellerCouponForm";
   static const String sellerProductDetails = "/sellerProductDetails";
 
 
