@@ -46,6 +46,8 @@ class AppRoutesName{
   static const String adminProductScreen = '/adminProductScreen';
   static const String adminOrderScreen = '/adminOrderScreen';
   static const String adminOrderDetailsScreen = '/adminOrderDetailsScreen';
+  static const String adminSellersScreen = '/adminSellersScreen';
+  static const String adminSellerDetailsScreen = '/adminSellerDetailsScreen';
 
 
   static const String sellerShell = "/sellerShell";

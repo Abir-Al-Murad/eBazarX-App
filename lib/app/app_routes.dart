@@ -12,6 +12,9 @@ import 'package:ebazarx/admin/flash_sale/screens/admin_flash_sale_list_screen.da
 import 'package:ebazarx/admin/orders/screens/admin_order_details_screen.dart';
 import 'package:ebazarx/admin/orders/screens/admin_orders_screen.dart';
 import 'package:ebazarx/admin/products/screens/admin_product_screen.dart';
+import 'package:ebazarx/admin/sellers/domain/entities/seller_entity.dart';
+import 'package:ebazarx/admin/sellers/presentation/screens/admin_seller_detail_screen.dart';
+import 'package:ebazarx/admin/sellers/presentation/screens/admin_seller_list_screen.dart';
 import 'package:ebazarx/app/app_routes_name.dart';
 import 'package:ebazarx/common/screens/bottom_nav_holder.dart';
 import 'package:ebazarx/features/address/domain/entities/address_entity.dart';
@@ -61,6 +64,7 @@ class AppRoutes {
   static final _adminCategoryNavKey  = GlobalKey<NavigatorState>();
   static final _adminCouponNavKey  = GlobalKey<NavigatorState>();
   static final _adminFlashSaleNavKey  = GlobalKey<NavigatorState>();
+  static final _adminSellerNavKey  = GlobalKey<NavigatorState>();
 
   // Optional: you can also keep separate keys for other features if needed
 
@@ -266,6 +270,22 @@ class AppRoutes {
                 path: '/admin/flash-sale/form',
                 name: AppRoutesName.adminFlashSaleForm,
                 builder: (context, state) =>  AdminFlashSaleFormScreen(flashSale: state.extra as FlashSale?),
+              ),
+            ],
+          ),
+
+          StatefulShellBranch(
+            navigatorKey: _adminSellerNavKey,
+            routes: [
+              GoRoute(
+                path: '/admin/sellers',
+                name: AppRoutesName.adminSellersScreen,
+                builder: (context, state) => const AdminSellerListScreen(),
+              ),
+              GoRoute(
+                path: '/admin/sellers/details',
+                name: AppRoutesName.adminSellerDetailsScreen,
+                builder: (context, state) =>  AdminSellerDetailScreen(seller: state.extra as SellerEntity),
               ),
             ],
           ),

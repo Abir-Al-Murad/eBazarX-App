@@ -142,15 +142,16 @@ class _AdminSidebar extends ConsumerWidget {
                 _item(Icons.category_rounded, 'Categories', 4),
 
                 _item(Icons.local_offer_rounded, 'Coupons', 5),
+                _item(Icons.flash_on_outlined, 'Flash Sale', 6),
+                _item(Icons.store_rounded, 'Sellers', 7),
 
-                _item(Icons.people_alt_rounded, 'Users', 6),
+                _item(Icons.people_alt_rounded, 'Users', 8),
 
 
-                _item(Icons.reviews_rounded, 'Reviews', 7),
+                _item(Icons.reviews_rounded, 'Reviews', 9),
 
-                _item(Icons.store_rounded, 'Sellers', 8),
 
-                _item(Icons.analytics_rounded, 'Analytics', 9),
+                _item(Icons.analytics_rounded, 'Analytics', 10),
               ],
             ),
           ),
