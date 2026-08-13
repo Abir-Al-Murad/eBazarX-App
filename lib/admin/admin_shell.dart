@@ -31,6 +31,8 @@ class _AdminShellState extends ConsumerState<AdminShell> {
   @override
   Widget build(BuildContext context) {
     final isDesktop = context.isDesktop;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     // ================= DESKTOP =================
     if (isDesktop) {
@@ -38,14 +40,18 @@ class _AdminShellState extends ConsumerState<AdminShell> {
         body: SafeArea(
           child: Row(
             children: [
-              _AdminSidebar(
-                selectedIndex: widget.navigationShell.currentIndex,
-                onTap: _goToBranch,
+              SizedBox(
+                width: 260,
+                child: _AdminSidebar(
+                  selectedIndex: widget.navigationShell.currentIndex,
+                  onTap: _goToBranch,
+                ),
               ),
-
               Expanded(
                 child: Container(
-                  color: const Color(0xffF7F8FA),
+                  color: isDark
+                      ? theme.scaffoldBackgroundColor
+                      : const Color(0xffF7F8FA),
                   child: widget.navigationShell,
                 ),
               ),
@@ -58,13 +64,20 @@ class _AdminShellState extends ConsumerState<AdminShell> {
     // ================= TABLET + MOBILE =================
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        title: Image.asset(AssetsPath.logoHorizontal, height: 70,width: 150,),
+        backgroundColor: theme.scaffoldBackgroundColor,
+        elevation: 0.5,
+        title: Image.asset(
+          AssetsPath.logoHorizontal,
+          height: 40,
+        ),
         centerTitle: true,
         leading: Builder(
           builder: (context) {
             return IconButton(
-              icon:  Icon(Icons.menu,color: Theme.of(context).brightness == Brightness.dark?Colors.white:Colors.black,),
+              icon: Icon(
+                Icons.menu_rounded,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
               onPressed: () {
                 Scaffold.of(context).openDrawer();
               },
@@ -73,20 +86,23 @@ class _AdminShellState extends ConsumerState<AdminShell> {
         ),
         actions: [
           IconButton(
-            icon:  Icon(Icons.notifications_none,color: Theme.of(context).brightness == Brightness.dark?Colors.white:Colors.black,),
+            icon: Icon(
+              Icons.notifications_none_rounded,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
             onPressed: () {},
           ),
         ],
       ),
-
       drawer: _AdminDrawer(
         selectedIndex: widget.navigationShell.currentIndex,
         onTap: _goToBranch,
       ),
-
       body: SafeArea(
         child: Container(
-          color: const Color(0xffF7F8FA),
+          color: isDark
+              ? theme.scaffoldBackgroundColor
+              : const Color(0xffF7F8FA),
           child: widget.navigationShell,
         ),
       ),
@@ -94,7 +110,30 @@ class _AdminShellState extends ConsumerState<AdminShell> {
   }
 }
 
+// ===========================================================
+// NAVIGATION ITEMS CONFIGURATION
+// ===========================================================
 
+class _NavItem {
+  final IconData icon;
+  final String title;
+
+  const _NavItem(this.icon, this.title);
+}
+
+const List<_NavItem> _adminNavItems = [
+  _NavItem(Icons.dashboard_rounded, 'Dashboard'),
+  _NavItem(Icons.inventory_2_rounded, 'Products'),
+  _NavItem(Icons.shopping_cart_rounded, 'Orders'),
+  _NavItem(Icons.image_rounded, 'Banners'),
+  _NavItem(Icons.category_rounded, 'Categories'),
+  _NavItem(Icons.local_offer_rounded, 'Coupons'),
+  _NavItem(Icons.flash_on_outlined, 'Flash Sale'),
+  _NavItem(Icons.store_rounded, 'Sellers'),
+  _NavItem(Icons.reviews_rounded, 'Reviews'),
+  _NavItem(Icons.people_alt_rounded, 'Users'),
+  _NavItem(Icons.analytics_rounded, 'Analytics'),
+];
 
 // ===========================================================
 // ADMIN SIDEBAR
@@ -108,106 +147,126 @@ class _AdminSidebar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
-      width: 250,
-      color: Colors.white,
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        border: Border(
+          right: BorderSide(
+            color: theme.dividerColor.withValues(alpha: 0.2),
+            width: 1,
+          ),
+        ),
+      ),
       child: Column(
         children: [
-          const SizedBox(height: 25),
-
-          const CircleAvatar(
-            radius: 30,
-            child: Icon(Icons.admin_panel_settings, size: 30),
-          ),
-
-          const SizedBox(height: 12),
-
-          const Text(
-            'eBazarX Admin',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-          ),
-
-          const SizedBox(height: 35),
-
-          Expanded(
-            child: ListView(
+          // Header
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            // color: theme.primaryColor,
+            child: Column(
               children: [
-                _item(Icons.dashboard_rounded, 'Dashboard', 0),
-
-                _item(Icons.inventory_2_rounded, 'Products', 1),
-
-                _item(Icons.shopping_cart_rounded, 'Orders', 2),
-
-                _item(Icons.image_rounded, 'Banners', 3),
-                _item(Icons.category_rounded, 'Categories', 4),
-
-                _item(Icons.local_offer_rounded, 'Coupons', 5),
-                _item(Icons.flash_on_outlined, 'Flash Sale', 6),
-                _item(Icons.store_rounded, 'Sellers', 7),
-                _item(Icons.reviews_rounded, 'Reviews', 8),
-
-                _item(Icons.people_alt_rounded, 'Users', 9),
-
-
-
-
-                _item(Icons.analytics_rounded, 'Analytics', 10),
+                CircleAvatar(
+                  radius: 32,
+                  // backgroundColor: Colors.,
+                  child: Padding(
+                    padding: const EdgeInsets.all(6.0),
+                    child: Image.asset(AssetsPath.logoRaw),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'eBazar Admin',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    // color: Colors.white,
+                  ),
+                ),
               ],
             ),
           ),
 
-          const Divider(),
-
-          ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Logout'),
-            onTap: () async {
-              invalidateUserProviders(ref.read);
-
-              final refreshToken = await AuthStorage.instance.getRefreshToken();
-
-              if (refreshToken != null) {
-                await ref
-                    .read(authNotifierProvider.notifier)
-                    .logout(refreshToken: refreshToken);
-              }
-
-              if (context.mounted) {
-                context.goNamed(AppRoutesName.login);
-              }
-            },
+          // Menu List
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              itemCount: _adminNavItems.length,
+              itemBuilder: (context, index) {
+                final item = _adminNavItems[index];
+                return _buildListTile(
+                  context: context,
+                  icon: item.icon,
+                  title: item.title,
+                  index: index,
+                  isSelected: selectedIndex == index,
+                  isDark: isDark,
+                  onTap: () => onTap(index),
+                );
+              },
+            ),
           ),
 
-          const SizedBox(height: 10),
+          const Divider(height: 1),
+
+          // Logout
+          ListTile(
+            leading: const Icon(Icons.logout_rounded, color: Colors.redAccent),
+            title: const Text(
+              'Logout',
+              style: TextStyle(
+                color: Colors.redAccent,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            onTap: () => _handleLogout(context, ref),
+          ),
+          const SizedBox(height: 12),
         ],
       ),
     );
   }
 
-  Widget _item(IconData icon, String title, int index) {
-    final selected = selectedIndex == index;
+  Widget _buildListTile({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required int index,
+    required bool isSelected,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    final primaryColor = Theme.of(context).primaryColor;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
       child: Material(
-        color: selected ? const Color(0xff2563EB) : Colors.transparent,
+        color: isSelected ? primaryColor : Colors.transparent,
         borderRadius: BorderRadius.circular(10),
         child: ListTile(
+          dense: true,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
           leading: Icon(
             icon,
-            color: selected ? Colors.white : Colors.grey.shade700,
+            color: isSelected
+                ? Colors.white
+                : (isDark ? Colors.grey.shade400 : Colors.grey.shade700),
           ),
           title: Text(
             title,
             style: TextStyle(
-              color: selected ? Colors.white : Colors.black87,
-              fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+              color: isSelected
+                  ? Colors.white
+                  : (isDark ? Colors.grey.shade200 : Colors.black87),
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
             ),
           ),
-          onTap: () => onTap(index),
+          onTap: onTap,
         ),
       ),
     );
@@ -215,10 +274,10 @@ class _AdminSidebar extends ConsumerWidget {
 }
 
 // ===========================================================
-// ADMIN DRAWER
+// ADMIN DRAWER (MOBILE / TABLET)
 // ===========================================================
 
-class _AdminDrawer extends StatelessWidget {
+class _AdminDrawer extends ConsumerWidget {
   const _AdminDrawer({
     required this.selectedIndex,
     required this.onTap,
@@ -228,173 +287,129 @@ class _AdminDrawer extends StatelessWidget {
   final ValueChanged<int> onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Drawer(
       child: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 30),
-
-            const CircleAvatar(
-              radius: 35,
-              child: Image(image: AssetImage(AssetsPath.logoRaw))
-            ),
-
-            const SizedBox(height: 20),
-
-            const Text(
-              'eBazar Admin',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
+            // Drawer Header
+            UserAccountsDrawerHeader(
+              decoration: BoxDecoration(
+                color: theme.primaryColor,
               ),
+              currentAccountPicture: CircleAvatar(
+                backgroundColor: Colors.white,
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: Image.asset(AssetsPath.logoRaw),
+                ),
+              ),
+              accountName: const Text(
+                'eBazar Admin Panel',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              accountEmail: const Text('admin@ebazarx.com'),
             ),
 
-            const SizedBox(height: 30),
-
+            // Navigation Options
             Expanded(
-              child: ListView(
-                children: [
-                  _drawerItem(
-                    context,
-                    Icons.dashboard_rounded,
-                    'Dashboard',
-                    0,
-                  ),
-                  _drawerItem(
-                    context,
-                    Icons.inventory_2_rounded,
-                    'Products',
-                    1,
-                  ),
-                  _drawerItem(
-                    context,
-                    Icons.shopping_cart_rounded,
-                    'Orders',
-                    2,
-                  ),
-                  _drawerItem(
-                    context,
-                    Icons.image_rounded,
-                    'Banners',
-                    3,
-                  ),
-                  _drawerItem(
-                    context,
-                    Icons.people_alt_rounded,
-                    'Users',
-                    4,
-                  ),
-                  _drawerItem(
-                    context,
-                    Icons.store_rounded,
-                    'Sellers',
-                    5,
-                  ),
-                  _drawerItem(
-                    context,
-                    Icons.category_rounded,
-                    'Categories',
-                    6,
-                  ),
-                  _drawerItem(
-                    context,
-                    Icons.reviews_rounded,
-                    'Reviews',
-                    7,
-                  ),
-                  _drawerItem(
-                    context,
-                    Icons.local_offer_rounded,
-                    'Coupons',
-                    8,
-                  ),
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                itemCount: _adminNavItems.length,
+                itemBuilder: (context, index) {
+                  final item = _adminNavItems[index];
+                  final isSelected = selectedIndex == index;
 
-                  _drawerItem(
-                    context,
-                    Icons.analytics_rounded,
-                    'Analytics',
-                    9,
-                  ),
-                ],
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 3,
+                    ),
+                    child: Material(
+                      color: isSelected
+                          ? theme.primaryColor
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(10),
+                      child: ListTile(
+                        dense: true,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        leading: Icon(
+                          item.icon,
+                          color: isSelected
+                              ? Colors.white
+                              : (isDark
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade700),
+                        ),
+                        title: Text(
+                          item.title,
+                          style: TextStyle(
+                            color: isSelected
+                                ? Colors.white
+                                : (isDark
+                                ? Colors.grey.shade200
+                                : Colors.black87),
+                            fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.w500,
+                          ),
+                        ),
+                        onTap: () {
+                          onTap(index);
+                          Navigator.of(context).pop(); // Close drawer
+                        },
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
 
-            const Divider(),
+            const Divider(height: 1),
 
+            // Logout Option
             ListTile(
               leading: const Icon(
-                Icons.logout,
-                color: Colors.red,
+                Icons.logout_rounded,
+                color: Colors.redAccent,
               ),
               title: const Text(
                 'Logout',
                 style: TextStyle(
-                  color: Colors.red,
+                  color: Colors.redAccent,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              onTap: () => _logout(context),
+              onTap: () {
+                Navigator.of(context).pop(); // Close drawer first
+                _handleLogout(context, ref);
+              },
             ),
-
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _drawerItem(
-      BuildContext context,
-      IconData icon,
-      String title,
-      int index,
-      ) {
-    final selected = selectedIndex == index;
+// Helper Logout Handler
+Future<void> _handleLogout(BuildContext context, WidgetRef ref) async {
+  invalidateUserProviders(ref.read);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 3,
-      ),
-      child: Material(
-        color: selected
-            ? const Color(0xff2563EB)
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(10),
-        child: ListTile(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          leading: Icon(
-            icon,
-            color: selected
-                ? Colors.white
-                : Colors.grey.shade700,
-          ),
-          title: Text(
-            title,
-            style: TextStyle(
-              color: selected
-                  ? Colors.white
-                  : Colors.grey.shade800,
-              fontWeight: selected
-                  ? FontWeight.bold
-                  : FontWeight.w500,
-            ),
-          ),
-          onTap: () {
-            onTap(index);
+  final refreshToken = await AuthStorage.instance.getRefreshToken();
 
-            // Close drawer
-            Navigator.of(context).pop();
-          },
-        ),
-      ),
-    );
+  if (refreshToken != null) {
+    await ref
+        .read(authNotifierProvider.notifier)
+        .logout(refreshToken: refreshToken);
   }
 
-  Future<void> _logout(BuildContext context) async {
-    // You need WidgetRef here if using authNotifierProvider.
-    // See note below.
+  if (context.mounted) {
+    context.goNamed(AppRoutesName.login);
   }
 }

@@ -10,6 +10,8 @@ class AccountSection extends StatelessWidget {
   final VoidCallback onAddresses;
   final VoidCallback onPayments;
   final VoidCallback onNotifications;
+  final VoidCallback onPressedApply;
+  final String role;
 
   const AccountSection({
     super.key,
@@ -19,6 +21,7 @@ class AccountSection extends StatelessWidget {
     required this.onAddresses,
     required this.onPayments,
     required this.onNotifications,
+    required this.onPressedApply, required this.role,
   });
 
   @override
@@ -46,6 +49,14 @@ class AccountSection extends StatelessWidget {
           title: 'Addresses',
           onTap: onAddresses,
         ),
+        if(role == "customer")...[
+          ProfileMenuTile(
+            icon: Icons.shopify,
+            title: 'Apply as Seller',
+            onTap: onPressedApply,
+          ),
+      ],
+
         ProfileMenuTile(
           icon: Icons.payment_rounded,
           title: 'Payment Methods',

@@ -23,6 +23,7 @@ import 'package:ebazarx/features/address/domain/entities/address_entity.dart';
 import 'package:ebazarx/features/address/presentation/screens/address_screen.dart';
 import 'package:ebazarx/features/address/presentation/screens/add_address_screen.dart';
 import 'package:ebazarx/features/auth/presentation/screens/login_screen.dart';
+import 'package:ebazarx/features/auth/presentation/screens/otp_screen.dart';
 import 'package:ebazarx/features/auth/presentation/screens/registration_screen.dart';
 import 'package:ebazarx/features/banner/domain/entities/banner.dart';
 import 'package:ebazarx/features/category/domain/entities/category_entity.dart';
@@ -34,6 +35,8 @@ import 'package:ebazarx/features/order/presentation/screens/order_details_screen
 import 'package:ebazarx/features/order/presentation/screens/order_list_screen.dart';
 import 'package:ebazarx/features/product/domain/entities/product_entity.dart';
 import 'package:ebazarx/features/product/presentation/screens/product_details_screen.dart';
+import 'package:ebazarx/features/profile/presentation/screens/application_screen.dart';
+import 'package:ebazarx/features/profile/presentation/screens/profile_screen.dart';
 import 'package:ebazarx/features/reviews/presentation/screens/review_screen.dart';
 import 'package:ebazarx/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:ebazarx/features/splash/presentation/screens/splash_screen.dart';
@@ -60,6 +63,7 @@ class AppRoutes {
   static final _sellerProductsNavKey  = GlobalKey<NavigatorState>();
   static final _sellerOrdersNavKey    = GlobalKey<NavigatorState>();
   static final _sellerCouponNavKey    = GlobalKey<NavigatorState>();
+  static final _sellerProfileNavKey    = GlobalKey<NavigatorState>();
 
   // Admin shell branch navigators (only one now, but ready for more)
   static final _adminDashboardNavKey  = GlobalKey<NavigatorState>();
@@ -91,10 +95,31 @@ class AppRoutes {
         name: AppRoutesName.login,
         builder: (context, state) => const LoginScreen(),
       ),
+
+      GoRoute(
+        path: '/seller/apply',
+        name: AppRoutesName.applySeller,
+        builder: (context, state) => const ApplySellerScreen(),
+      ),
       GoRoute(
         path: AppRoutesName.register,
         name: AppRoutesName.register,
         builder: (context, state) => const RegistrationScreen(),
+      ),
+      GoRoute(
+        path: '/auth/otp',
+        name: AppRoutesName.otpScreen,
+        builder: (context, state) {
+          final data = state.extra as Map<String, dynamic>;
+
+          return OtpScreen(
+            email: data['email'] as String,
+            fullName: data['fullName'] as String,
+            phone: data['phone'] as String,
+            password: data['password'] as String,
+            profileImage: data['profileImage'] as String?,
+          );
+        },
       ),
 
       // ─── Customer (BottomNav) ──────────────────────────────────
@@ -183,6 +208,16 @@ class AppRoutes {
                 path: '/seller/coupons/create',
                 name: AppRoutesName.sellerCouponForm,
                 builder: (context, state) =>  SellerCouponFormScreen(couponId: state.extra as String?,),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            navigatorKey: _sellerProfileNavKey,
+            routes: [
+              GoRoute(
+                path: '/users/me',
+                name: AppRoutesName.profile,
+                builder: (context, state) => const ProfileScreen(),
               ),
             ],
           ),

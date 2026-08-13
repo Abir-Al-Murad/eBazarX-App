@@ -1,6 +1,8 @@
-// admin/coupons/screens/coupon_form_screen.dart
+// admin/coupons/screens/admin_coupon_form_screen.dart
 import 'package:ebazarx/admin/coupons/providers/admin_coupon_providers.dart';
-import 'package:ebazarx/admin/coupons/states/coupon_crud_state.dart';
+import 'package:ebazarx/common/widgets/desktop_header.dart';
+import 'package:ebazarx/core/utils/app_snackbar.dart';
+import 'package:ebazarx/core/utils/responsive.dart';
 import 'package:ebazarx/features/coupon/domain/entities/admin_coupon_entity.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,8 +20,7 @@ class AdminCouponFormScreen extends ConsumerStatefulWidget {
       _AdminCouponFormScreenState();
 }
 
-class _AdminCouponFormScreenState
-    extends ConsumerState<AdminCouponFormScreen> {
+class _AdminCouponFormScreenState extends ConsumerState<AdminCouponFormScreen> {
   final _formKey = GlobalKey<FormState>();
 
   late TextEditingController _codeController;
@@ -30,13 +31,10 @@ class _AdminCouponFormScreenState
   late TextEditingController _usageLimitController;
   late TextEditingController _perUserLimitController;
 
-  String _discountType = 'percentage'; // percentage or fixed
+  String _discountType = 'percentage';
   bool _isActive = true;
   DateTime _startDate = DateTime.now();
   DateTime _endDate = DateTime.now().add(const Duration(days: 30));
-
-  // For seller/product/category selections (optional - leave as is)
-  // We'll keep them simple; they can be enhanced later.
 
   @override
   void initState() {
@@ -44,8 +42,7 @@ class _AdminCouponFormScreenState
     final coupon = widget.coupon;
 
     _codeController = TextEditingController(text: coupon?.code ?? '');
-    _descriptionController =
-        TextEditingController(text: coupon?.description ?? '');
+    _descriptionController = TextEditingController(text: coupon?.description ?? '');
     _discountValueController =
         TextEditingController(text: coupon?.discountValue.toString() ?? '');
     _minOrderAmountController =
@@ -77,10 +74,6 @@ class _AdminCouponFormScreenState
     super.dispose();
   }
 
-  // ============================================================
-  // DATE PICKERS
-  // ============================================================
-
   Future<void> _selectStartDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -90,7 +83,6 @@ class _AdminCouponFormScreenState
     );
     if (picked != null) {
       setState(() => _startDate = picked);
-      // Ensure end date is after start date
       if (_endDate.isBefore(_startDate)) {
         setState(() => _endDate = _startDate.add(const Duration(days: 30)));
       }
@@ -109,42 +101,32 @@ class _AdminCouponFormScreenState
     }
   }
 
-  // ============================================================
-  // SAVE
-  // ============================================================
-
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
     final notifier = ref.read(couponCrudNotifierProvider.notifier);
 
-    final double discountValue = double.tryParse(_discountValueController.text) ?? 0;
-    final double? minOrderAmount =
-    _minOrderAmountController.text.isNotEmpty
+    final discountValue = double.tryParse(_discountValueController.text) ?? 0;
+    final minOrderAmount = _minOrderAmountController.text.isNotEmpty
         ? double.tryParse(_minOrderAmountController.text)
         : null;
-    final double? maxDiscount =
-    _maxDiscountController.text.isNotEmpty
+    final maxDiscount = _maxDiscountController.text.isNotEmpty
         ? double.tryParse(_maxDiscountController.text)
         : null;
-    final int? usageLimit =
-    _usageLimitController.text.isNotEmpty
+    final usageLimit = _usageLimitController.text.isNotEmpty
         ? int.tryParse(_usageLimitController.text)
         : null;
-    final int? perUserLimit =
-    _perUserLimitController.text.isNotEmpty
+    final perUserLimit = _perUserLimitController.text.isNotEmpty
         ? int.tryParse(_perUserLimitController.text)
         : null;
 
     bool success;
-
     if (widget.isEdit) {
       success = await notifier.updateCoupon(
         couponId: widget.coupon!.id,
         code: _codeController.text.trim(),
-        description: _descriptionController.text.trim().isEmpty
-            ? null
-            : _descriptionController.text.trim(),
+        description:
+        _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
         discountType: _discountType,
         discountValue: discountValue,
         minOrderAmount: minOrderAmount,
@@ -154,14 +136,12 @@ class _AdminCouponFormScreenState
         isActive: _isActive,
         startDate: _startDate,
         endDate: _endDate,
-        // sellerId, productIds, categoryIds can be added later
       );
     } else {
       success = await notifier.createCoupon(
         code: _codeController.text.trim(),
-        description: _descriptionController.text.trim().isEmpty
-            ? null
-            : _descriptionController.text.trim(),
+        description:
+        _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
         discountType: _discountType,
         discountValue: discountValue,
         minOrderAmount: minOrderAmount,
@@ -171,218 +151,370 @@ class _AdminCouponFormScreenState
         isActive: _isActive,
         startDate: _startDate,
         endDate: _endDate,
-        // sellerId, productIds, categoryIds can be added later
       );
     }
 
     if (!mounted) return;
 
     if (success) {
+      AppSnackBar.success(context: context, widget.isEdit ? 'Coupon updated' : 'Coupon created');
       Navigator.pop(context, true);
+    } else {
+      final crudState = ref.read(couponCrudNotifierProvider);
+      AppSnackBar.error(context: context, crudState.failure?.toString() ?? 'Failed to save coupon');
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final crudState = ref.watch(couponCrudNotifierProvider);
     final isLoading = crudState.isLoading;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.isEdit ? 'Edit Coupon' : 'Create Coupon'),
-      ),
+      backgroundColor: theme.colorScheme.surface,
+      appBar: context.isDesktop
+          ? null
+          : AppBar(title: Text(widget.isEdit ? 'Edit Coupon' : 'Create Coupon')),
       body: Form(
         key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
+        child: Column(
           children: [
-            // Code
-            TextFormField(
-              controller: _codeController,
-              decoration: const InputDecoration(
-                labelText: 'Coupon Code *',
-                hintText: 'e.g., SUMMER20',
-                border: OutlineInputBorder(),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.all(context.paddingSizeLarge),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 720),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (context.isDesktop) ...[
+                          DesktopHeader(
+                            title: widget.isEdit ? 'Edit Coupon' : 'Create Coupon',
+                            subtitle: widget.isEdit
+                                ? 'Update this discount code'
+                                : 'Set up a new discount code for customers',
+                          ),
+                          SizedBox(height: context.paddingSizeExtraLarge),
+                        ],
+                        _FormSectionCard(
+                          title: 'Coupon Details',
+                          child: Column(
+                            children: [
+                              TextFormField(
+                                controller: _codeController,
+                                textCapitalization: TextCapitalization.characters,
+                                decoration: const InputDecoration(
+                                  labelText: 'Coupon Code *',
+                                  hintText: 'e.g., SUMMER20',
+                                ),
+                                validator: (v) =>
+                                (v == null || v.trim().isEmpty) ? 'Required' : null,
+                              ),
+                              SizedBox(height: context.paddingSizeDefault),
+                              TextFormField(
+                                controller: _descriptionController,
+                                maxLines: 2,
+                                decoration: const InputDecoration(labelText: 'Description'),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: context.paddingSizeDefault),
+                        _FormSectionCard(
+                          title: 'Discount',
+                          subtitle: 'How much the customer saves and any spending conditions',
+                          child: Column(
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    flex: 2,
+                                    child: DropdownButtonFormField<String>(
+                                      initialValue: _discountType,
+                                      decoration: const InputDecoration(labelText: 'Type'),
+                                      items: const [
+                                        DropdownMenuItem(
+                                          value: 'percentage',
+                                          child: Text('Percentage'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'fixed',
+                                          child: Text('Fixed Amount'),
+                                        ),
+                                      ],
+                                      onChanged: (val) => setState(() => _discountType = val!),
+                                    ),
+                                  ),
+                                  SizedBox(width: context.paddingSizeDefault),
+                                  Expanded(
+                                    flex: 3,
+                                    child: TextFormField(
+                                      controller: _discountValueController,
+                                      keyboardType:
+                                      const TextInputType.numberWithOptions(decimal: true),
+                                      decoration: InputDecoration(
+                                        labelText: 'Value *',
+                                        prefixText: _discountType == 'percentage' ? null : '৳ ',
+                                        suffixText: _discountType == 'percentage' ? '%' : null,
+                                      ),
+                                      validator: (v) {
+                                        if (v == null || v.trim().isEmpty) return 'Required';
+                                        if (double.tryParse(v) == null) return 'Invalid number';
+                                        return null;
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: context.paddingSizeDefault),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _minOrderAmountController,
+                                      keyboardType:
+                                      const TextInputType.numberWithOptions(decimal: true),
+                                      decoration: const InputDecoration(
+                                        labelText: 'Min Order Amount',
+                                        prefixText: '৳ ',
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(width: context.paddingSizeDefault),
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _maxDiscountController,
+                                      keyboardType:
+                                      const TextInputType.numberWithOptions(decimal: true),
+                                      decoration: const InputDecoration(
+                                        labelText: 'Max Discount',
+                                        prefixText: '৳ ',
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: context.paddingSizeDefault),
+                        _FormSectionCard(
+                          title: 'Usage Limits',
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _usageLimitController,
+                                  keyboardType: TextInputType.number,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Total Usage Limit',
+                                    hintText: 'Leave blank for unlimited',
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: context.paddingSizeDefault),
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _perUserLimitController,
+                                  keyboardType: TextInputType.number,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Per User Limit',
+                                    hintText: 'Leave blank for unlimited',
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: context.paddingSizeDefault),
+                        _FormSectionCard(
+                          title: 'Validity & Status',
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _DateField(
+                                      label: 'Start Date *',
+                                      date: _startDate,
+                                      onTap: _selectStartDate,
+                                    ),
+                                  ),
+                                  SizedBox(width: context.paddingSizeDefault),
+                                  Expanded(
+                                    child: _DateField(
+                                      label: 'End Date *',
+                                      date: _endDate,
+                                      onTap: _selectEndDate,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: context.paddingSizeSmall),
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: context.paddingSizeSmall,
+                                  vertical: context.paddingSizeExtraSmall,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.surfaceContainerHighest
+                                      .withValues(alpha: 0.4),
+                                  borderRadius: BorderRadius.circular(context.radiusDefault),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        'Active',
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(fontWeight: FontWeight.w600),
+                                      ),
+                                    ),
+                                    Switch(
+                                      value: _isActive,
+                                      onChanged: (val) => setState(() => _isActive = val),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
-              validator: (v) =>
-              v == null || v.trim().isEmpty ? 'Required' : null,
             ),
-            const SizedBox(height: 16),
+            _SubmitBar(isEdit: widget.isEdit, isSaving: isLoading, onSubmit: _submit),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
-            // Description
-            TextFormField(
-              controller: _descriptionController,
-              maxLines: 2,
-              decoration: const InputDecoration(
-                labelText: 'Description',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
+class _DateField extends StatelessWidget {
+  const _DateField({required this.label, required this.date, required this.onTap});
 
-            // Discount Type & Value
-            Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: DropdownButtonFormField<String>(
-                    value: _discountType,
-                    decoration: const InputDecoration(
-                      labelText: 'Discount Type',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: 'percentage', child: Text('Percentage')),
-                      DropdownMenuItem(value: 'fixed', child: Text('Fixed Amount')),
-                    ],
-                    onChanged: (val) => setState(() => _discountType = val!),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 3,
-                  child: TextFormField(
-                    controller: _discountValueController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(
-                      labelText: 'Discount Value *',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (v) {
-                      if (v == null || v.trim().isEmpty) return 'Required';
-                      if (double.tryParse(v) == null) return 'Invalid number';
-                      return null;
-                    },
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
+  final String label;
+  final DateTime date;
+  final VoidCallback onTap;
 
-            // Min Order Amount & Max Discount
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _minOrderAmountController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(
-                      labelText: 'Min Order Amount',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextFormField(
-                    controller: _maxDiscountController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(
-                      labelText: 'Max Discount',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
 
-            // Usage Limits
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _usageLimitController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Usage Limit (total)',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextFormField(
-                    controller: _perUserLimitController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Per User Limit',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(context.radiusDefault),
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: label,
+          suffixIcon: Icon(
+            Icons.calendar_today_rounded,
+            size: 18,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        child: Text(DateFormat('dd MMM yyyy').format(date)),
+      ),
+    );
+  }
+}
 
-            // Start & End Dates
-            Row(
-              children: [
-                Expanded(
-                  child: InkWell(
-                    onTap: _selectStartDate,
-                    child: InputDecorator(
-                      decoration: const InputDecoration(
-                        labelText: 'Start Date *',
-                        border: OutlineInputBorder(),
-                      ),
-                      child: Text(DateFormat('yyyy-MM-dd').format(_startDate)),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: InkWell(
-                    onTap: _selectEndDate,
-                    child: InputDecorator(
-                      decoration: const InputDecoration(
-                        labelText: 'End Date *',
-                        border: OutlineInputBorder(),
-                      ),
-                      child: Text(DateFormat('yyyy-MM-dd').format(_endDate)),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
+// ================================
+// Shared section card wrapper (same as banner/category form)
+// ================================
+class _FormSectionCard extends StatelessWidget {
+  const _FormSectionCard({required this.title, required this.child, this.subtitle});
 
-            // Active Switch
-            SwitchListTile(
-              title: const Text('Active'),
-              value: _isActive,
-              onChanged: (val) => setState(() => _isActive = val),
-              contentPadding: EdgeInsets.zero,
-            ),
-            const SizedBox(height: 24),
+  final String title;
+  final String? subtitle;
+  final Widget child;
 
-            // Error
-            if (crudState.hasError)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Text(
-                  crudState.failure?.toString() ?? 'Error',
-                  style: const TextStyle(color: Colors.red),
-                ),
-              ),
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
 
-            // Submit
-            SizedBox(
-              height: 50,
-              child: ElevatedButton(
-                onPressed: isLoading ? null : _submit,
-                child: isLoading
-                    ? const SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-                    : Text(
-                  widget.isEdit ? 'Update Coupon' : 'Create Coupon',
-                ),
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(context.paddingSizeDefault),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(context.radiusLarge),
+        border: Border.all(color: theme.dividerColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          if (subtitle != null) ...[
+            SizedBox(height: 2),
+            Text(
+              subtitle!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ],
+          SizedBox(height: context.paddingSizeDefault),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+// ================================
+// Sticky submit bar (same as banner/category form)
+// ================================
+class _SubmitBar extends StatelessWidget {
+  const _SubmitBar({required this.isEdit, required this.isSaving, required this.onSubmit});
+
+  final bool isEdit;
+  final bool isSaving;
+  final VoidCallback onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: EdgeInsets.all(context.paddingSizeDefault),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        border: Border(top: BorderSide(color: theme.dividerColor)),
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: FilledButton.icon(
+              onPressed: isSaving ? null : onSubmit,
+              icon: isSaving
+                  ? const SizedBox(
+                height: 18,
+                width: 18,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              )
+                  : Icon(isEdit ? Icons.save_rounded : Icons.add_rounded, size: 20),
+              label: Text(
+                isSaving
+                    ? (isEdit ? 'Updating...' : 'Creating...')
+                    : (isEdit ? 'Update Coupon' : 'Create Coupon'),
+              ),
+            ),
+          ),
         ),
       ),
     );

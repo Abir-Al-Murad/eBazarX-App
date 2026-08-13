@@ -5,6 +5,9 @@ import 'package:ebazarx/core/utils/app_snackbar.dart';
 import 'package:ebazarx/features/auth/presentation/notifiers/auth_notifier.dart';
 import 'package:ebazarx/features/auth/presentation/providers/auth_provider.dart';
 import 'package:ebazarx/common/widgets/aurora_background.dart';
+import 'package:ebazarx/features/upload/models/upload_file_model.dart';
+import 'package:ebazarx/features/upload/presentation/providers/image_upload_provider.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -38,22 +41,146 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     super.dispose();
   }
 
-  Future<void> _handleRegister(AuthNotifier authNotifier)async {
+  // Method to pick and upload profile image
+  Future<void> _pickAndUploadProfileImage() async {
+    final uploadState = ref.read(imageUploadNotifierProvider);
+    if (uploadState.isUploading) return;
+
+    final result = await FilePicker.pickFiles(
+      type: FileType.image,
+      allowMultiple: false,
+      withData: true,
+    );
+
+    if (result == null || result.files.isEmpty) return;
+
+    final file = result.files.first;
+    if (file.bytes == null) return;
+
+    final uploadFile = UploadFile(
+      fileName: file.name,
+      bytes: file.bytes!,
+    );
+
+    final notifier = ref.read(imageUploadNotifierProvider.notifier);
+    await notifier.upload(uploadFile);
+
+    // Check for errors after upload
+    final newState = ref.read(imageUploadNotifierProvider);
+    if (newState.failure != null) {
+      AppSnackBar.error(
+        context: context,
+        newState.failure?.message ?? 'Image upload failed',
+      );
+      // // Clear error after showing
+      // notifier.clear();
+    }
+  }
+
+  Future<void> _handleRegister(AuthNotifier authNotifier) async {
     if (!_formKey.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
-    final result = await authNotifier.register(
+
+    // Get the uploaded image URL from state
+    final uploadState = ref.read(imageUploadNotifierProvider);
+    final profileImageUrl = uploadState.images.isNotEmpty
+        ? uploadState.images.first.url
+        : null;
+
+    final result = await authNotifier.request_registration_otp(
       fullName: _fullNameController.text.trim(),
       email: _emailController.text.trim(),
       phone: _phoneController.text.trim(),
       password: _passwordController.text,
+      profileImage: profileImageUrl,
     );
-    if(result){
-      Navigator.of(context).pop();
-    }else{
-      AppSnackBar.warning(context: context,ref.watch(authNotifierProvider).failure?.message??"Something went wrong");
+    if (result) {
+      // ref.read(imageUploadNotifierProvider.notifier).clear();
+      context.pushNamed(
+        AppRoutesName.otpScreen,
+        extra: {
+          'fullName': _fullNameController.text.trim(),
+          'email': _emailController.text.trim(),
+          'phone': _phoneController.text.trim(),
+          'password': _passwordController.text,
+          'profileImage': profileImageUrl,
+        },
+      );
+    } else {
+      AppSnackBar.warning(
+        context: context,
+        ref.watch(authNotifierProvider).failure?.message ?? "Something went wrong",
+      );
     }
   }
 
+  Widget _buildProfileImage(ThemeData theme, WidgetRef ref) {
+    final uploadState = ref.watch(imageUploadNotifierProvider);
+
+    final imageUrl = uploadState.images.isNotEmpty
+        ? uploadState.images.first.url
+        : null;
+
+    return Center(
+      child: Stack(
+        children: [
+          CircleAvatar(
+            radius: 48,
+            backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+            backgroundImage: imageUrl != null
+                ? NetworkImage(imageUrl)
+                : null,
+            child: imageUrl == null
+                ? Icon(
+              Icons.person,
+              size: 48,
+              color: theme.colorScheme.primary,
+            )
+                : null,
+          ),
+          Positioned(
+            right: 0,
+            bottom: 0,
+            child: Material(
+              color: theme.colorScheme.primary,
+              shape: const CircleBorder(),
+              child: InkWell(
+                onTap: uploadState.isUploading
+                    ? null
+                    : _pickAndUploadProfileImage,
+                customBorder: const CircleBorder(),
+                child: Padding(
+                  padding: const EdgeInsets.all(9),
+                  child: uploadState.isUploading
+                      ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                      : const Icon(
+                    Icons.camera_alt_rounded,
+                    size: 18,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void initState() {
+    Future.microtask((){
+      ref.read(imageUploadNotifierProvider.notifier).clear();
+    });
+    super.initState();
+  }
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -65,25 +192,13 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     final authNotifier = ref.read(authNotifierProvider.notifier);
     final isLoading = authState.isRegistering;
 
-    // ref.listen(authNotifierProvider, (previous, next) {
-    //   if (next.failure != null && next.error != previous?.error) {
-    //     AppSnackbar.show(
-    //       message: next.error.toString(),
-    //       type: SnackbarType.error,
-    //     );
-    //   }
-    // });
-
     final cardWidth = isDesktop ? 460.0 : (isTablet ? 480.0 : double.infinity);
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
       body: Stack(
         children: [
-          // ---- Background gradient + soft blobs ----
           AuroraBackground(theme: theme),
-
-          // ---- Registration form ----
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
@@ -102,6 +217,8 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                         children: [
                           _buildHeader(theme),
                           const SizedBox(height: 28),
+                          _buildProfileImage(theme, ref),
+                          const SizedBox(height: 24),
                           _GlassTextField(
                             controller: _fullNameController,
                             label: 'Full Name',

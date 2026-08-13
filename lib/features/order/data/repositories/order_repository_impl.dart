@@ -1,17 +1,14 @@
-import 'package:ebazarx/features/order/data/datasources/order_remote_data_source.dart';
-import 'package:ebazarx/features/order/data/models/check_out_item_model.dart';
 import 'package:ebazarx/features/order/domain/entities/checkout_item_entity.dart';
 import 'package:ebazarx/features/order/domain/entities/order_entity.dart';
 import 'package:ebazarx/features/order/domain/entities/order_item_entity.dart';
 import 'package:ebazarx/features/order/domain/entities/order_place_response_entity.dart';
 import 'package:ebazarx/features/order/domain/repositories/order_repository.dart';
+import '../datasources/order_remote_data_source.dart';
 
 class OrderRepositoryImpl implements OrderRepository {
   final OrderRemoteDataSource _remoteDataSource;
 
   const OrderRepositoryImpl(this._remoteDataSource);
-
-  /// Customer
 
   @override
   Future<OrderPlaceResponseEntity> placeOrder({
@@ -35,64 +32,34 @@ class OrderRepositoryImpl implements OrderRepository {
     return response.toEntity();
   }
 
-
   @override
-  Future<List<OrderEntity>> getOrders({
-    int skip = 0,
-    int limit = 20,
-  }) async {
-    final orders = await _remoteDataSource.getOrders(
-      skip: skip,
-      limit: limit,
-    );
-
-    return orders.map((e) => e.toEntity()).toList();
+  Future<List<OrderEntity>> getOrders({int skip = 0, int limit = 20}) async {
+    final models = await _remoteDataSource.getOrders(skip: skip, limit: limit);
+    return models.map((e) => e.toEntity()).toList();
   }
 
   @override
-  Future<OrderEntity> getOrder({
-    required String orderId,
-  }) async {
-    final order = await _remoteDataSource.getOrder(orderId);
-
-    return order.toEntity();
-  }
-
-  @override
-  Future<OrderEntity> cancelOrder({
-    required String orderId,
-  }) async {
-    final order = await _remoteDataSource.cancelOrder(orderId);
-
-    return order.toEntity();
-  }
-
-  @override
-  Future<OrderEntity> confirmPayment(
-      String orderId,
-      String paymentIntentId,
-      ) async {
-    final model = await _remoteDataSource.confirmPayment(
-      orderId,
-      paymentIntentId,
-    );
-
+  Future<OrderEntity> getOrder({required String orderId}) async {
+    final model = await _remoteDataSource.getOrder(orderId);
     return model.toEntity();
   }
 
-  /// Seller
+  @override
+  Future<OrderEntity> cancelOrder({required String orderId}) async {
+    final model = await _remoteDataSource.cancelOrder(orderId);
+    return model.toEntity();
+  }
 
   @override
-  Future<List<OrderItemEntity>> getSellerOrderItems({
-    int skip = 0,
-    int limit = 20,
-  }) async {
-    final items = await _remoteDataSource.getSellerOrderItems(
-      skip: skip,
-      limit: limit,
-    );
+  Future<OrderEntity> confirmPayment(String orderId, String paymentIntentId) async {
+    final model = await _remoteDataSource.confirmPayment(orderId, paymentIntentId);
+    return model.toEntity();
+  }
 
-    return items.map((e) => e.toEntity()).toList();
+  @override
+  Future<List<OrderItemEntity>> getSellerOrderItems({int skip = 0, int limit = 20}) async {
+    final models = await _remoteDataSource.getSellerOrderItems(skip: skip, limit: limit);
+    return models.map((e) => e.toEntity()).toList();
   }
 
   @override
@@ -100,15 +67,9 @@ class OrderRepositoryImpl implements OrderRepository {
     required String itemId,
     required String status,
   }) async {
-    final item = await _remoteDataSource.updateOrderItemStatus(
-      itemId: itemId,
-      status: status,
-    );
-
-    return item.toEntity();
+    final model = await _remoteDataSource.updateOrderItemStatus(itemId: itemId, status: status);
+    return model.toEntity();
   }
-
-  /// Admin
 
   @override
   Future<List<OrderEntity>> getAllOrders({
@@ -116,22 +77,14 @@ class OrderRepositoryImpl implements OrderRepository {
     int limit = 20,
     String? status,
   }) async {
-    final orders = await _remoteDataSource.getAllOrders(
-      skip: skip,
-      limit: limit,
-      status: status,
-    );
-
-    return orders.map((e) => e.toEntity()).toList();
+    final models = await _remoteDataSource.getAllOrders(skip: skip, limit: limit, status: status);
+    return models.map((e) => e.toEntity()).toList();
   }
 
   @override
-  Future<OrderEntity> getOrderDetails({
-    required String orderId,
-  }) async {
-    final order = await _remoteDataSource.getOrderDetails(orderId);
-
-    return order.toEntity();
+  Future<OrderEntity> getOrderDetails({required String orderId}) async {
+    final model = await _remoteDataSource.getOrderDetails(orderId);
+    return model.toEntity();
   }
 
   @override
@@ -139,11 +92,19 @@ class OrderRepositoryImpl implements OrderRepository {
     required String orderId,
     required String status,
   }) async {
-    final order = await _remoteDataSource.updateOrderStatus(
-      orderId: orderId,
-      status: status,
-    );
+    final model = await _remoteDataSource.updateOrderStatus(orderId: orderId, status: status);
+    return model.toEntity();
+  }
 
-    return order.toEntity();
+  @override
+  Future<OrderEntity> updateOrderPaymentStatus({
+    required String orderId,
+    required String paymentStatus,
+  }) async {
+    final model = await _remoteDataSource.updateOrderPaymentStatus(
+      orderId: orderId,
+      paymentStatus: paymentStatus,
+    );
+    return model.toEntity();
   }
 }

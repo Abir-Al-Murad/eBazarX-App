@@ -102,6 +102,7 @@ class ProfileScreen extends ConsumerWidget {
 
                   SliverToBoxAdapter(
                     child: AccountSection(
+                      role: profile.role,
                       onEditProfile: () {},
                       onOrders: () {},
                       onWishlist: () {},
@@ -110,6 +111,9 @@ class ProfileScreen extends ConsumerWidget {
                       },
                       onPayments: () {},
                       onNotifications: () {},
+                      onPressedApply: () {
+                        context.pushNamed(AppRoutesName.applySeller);
+                      }
                     ),
                   ),
 

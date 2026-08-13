@@ -188,4 +188,23 @@ class OrderRemoteDataSource {
 
     return OrderModel.fromJson(response.body);
   }
+
+  /// Admin: Update payment status
+  Future<OrderModel> updateOrderPaymentStatus({
+    required String orderId,
+    required String paymentStatus,
+  }) async {
+    final response = await _apiClient.put(
+      '/admin/orders/$orderId/payment-status',
+      data: {'payment_status': paymentStatus},
+    );
+
+    if (!response.isSuccess) {
+      throw response.failure ??
+          Exception(response.errorMessage ?? 'Failed to update payment status');
+    }
+
+    return OrderModel.fromJson(response.body);
+  }
+
 }

@@ -1,8 +1,9 @@
 import 'package:ebazarx/app/app_routes_name.dart';
-import 'package:ebazarx/common/utils/load_necessary_data.dart';
 import 'package:ebazarx/core/services/auth_storage.dart';
 import 'package:ebazarx/core/utils/app_snackbar.dart';
+import 'package:ebazarx/core/utils/responsive.dart';
 import 'package:ebazarx/features/cart/presentation/providers/cart_providers.dart';
+import 'package:ebazarx/features/order/domain/entities/checkout_item_entity.dart';
 import 'package:ebazarx/features/product/presentation/providers/product_providers.dart';
 import 'package:ebazarx/features/product/presentation/widgets/product_details_shimmer.dart';
 import 'package:ebazarx/features/product/presentation/widgets/quantity_section.dart';
@@ -60,7 +61,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
 
   // Fades the app bar title + background in over the last [_fadeRange]
   // pixels before the SliverAppBar fully collapses, instead of an abrupt
-  // on/off switch.
+  // on/off switch. Mobile/tablet only — desktop uses a static header.
   void _handleScroll() {
     final collapsedAt = _expandedHeight - kToolbarHeight - _fadeRange;
     final opacity =
@@ -71,13 +72,39 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
     }
   }
 
+  Future<void> _onAddToCart(BuildContext context, dynamic product) async {
+    if (AuthStorage.accessToken == null) {
+      AppSnackBar.info(context: context, "Please login to add to cart");
+      return;
+    }
+    await ref.read(cartNotifierProvider.notifier).addToCart(
+      variantId: ref.read(productDetailsNotifierProvider).selectedVariant?.id ??
+          product.variants.first.id,
+      quantity: ref.read(productDetailsNotifierProvider).quantity,
+    );
+    if (!context.mounted) return;
+    final cartState = ref.read(cartNotifierProvider);
+    if (cartState.failure != null) {
+      AppSnackBar.error(context: context, cartState.failure!.message);
+    } else {
+      AppSnackBar.success(context: context, "Added to cart");
+    }
+  }
+
+  void _onBuyNow(BuildContext context) {
+    if (AuthStorage.accessToken == null) {
+      AppSnackBar.info(context: context, "Please login to buy now");
+      return;
+    }
+    context.pushNamed(AppRoutesName.checkout,extra: {"fromCart":false,"items":[CheckoutItemEntity(variant_id: ref.read(productDetailsNotifierProvider).selectedVariant!.id, quantity: ref.read(productDetailsNotifierProvider).quantity)],"subTotal":ref.read(productDetailsNotifierProvider).product!.discountPrice??ref.read(productDetailsNotifierProvider).product!.price });
+  }
+
   @override
   Widget build(BuildContext context) {
     final productState = ref.watch(productDetailsNotifierProvider);
-    final theme = Theme.of(context);
 
     if (productState.isLoading) {
-      return ProductDetailsShimmer();
+      return const ProductDetailsShimmer();
     }
 
     if (productState.failure != null) {
@@ -100,26 +127,94 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
     final activeVariantId = productState.selectedVariant?.id ??
         (product.variants.isNotEmpty ? product.variants.first.id : null);
 
+    if (context.isDesktop) {
+      return _DesktopProductDetails(
+        product: product,
+        productState: productState,
+        activeVariantId: activeVariantId!,
+        totalStock: totalStock,
+        productId: widget.productId,
+        onAddToCart: () => _onAddToCart(context, product),
+        onBuyNow: () => _onBuyNow(context),
+      );
+    }
+
+    return _CompactProductDetails(
+      product: product,
+      productState: productState,
+      activeVariantId: activeVariantId!,
+      totalStock: totalStock,
+      productId: widget.productId,
+      scrollController: _scrollController,
+      titleOpacity: _titleOpacity,
+      expandedHeight: _expandedHeight,
+      isTablet: context.isTablet,
+      onAddToCart: () => _onAddToCart(context, product),
+      onBuyNow: () => _onBuyNow(context),
+    );
+  }
+}
+
+// ============================================================
+// MOBILE / TABLET — collapsing image header, single column scroll
+// ============================================================
+
+class _CompactProductDetails extends ConsumerWidget {
+  const _CompactProductDetails({
+    required this.product,
+    required this.productState,
+    required this.activeVariantId,
+    required this.totalStock,
+    required this.productId,
+    required this.scrollController,
+    required this.titleOpacity,
+    required this.expandedHeight,
+    required this.isTablet,
+    required this.onAddToCart,
+    required this.onBuyNow,
+  });
+
+  final dynamic product;
+  final dynamic productState;
+  final String activeVariantId;
+  final int totalStock;
+  final String productId;
+  final ScrollController scrollController;
+  final double titleOpacity;
+  final double expandedHeight;
+  final bool isTablet;
+  final VoidCallback onAddToCart;
+  final VoidCallback onBuyNow;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    // Tablet gets a wider, centered content column instead of edge-to-edge.
+    final maxContentWidth = isTablet ? 640.0 : double.infinity;
+
     return Scaffold(
       body: NestedScrollView(
-        controller: _scrollController,
+        controller: scrollController,
         headerSliverBuilder: (_, __) => [
           SliverAppBar(
             pinned: true,
-            expandedHeight: _expandedHeight,
-            elevation: _titleOpacity > 0.05 ? 1 : 0,
-            backgroundColor:
-            Color.lerp(Colors.transparent, theme.colorScheme.surface, _titleOpacity),
+            expandedHeight: expandedHeight,
+            elevation: titleOpacity > 0.05 ? 1 : 0,
+            backgroundColor: Color.lerp(
+              Colors.transparent,
+              theme.colorScheme.surface,
+              titleOpacity,
+            ),
             surfaceTintColor: Colors.transparent,
             iconTheme: IconThemeData(
               color: Color.lerp(
                 Colors.white,
                 theme.colorScheme.onSurface,
-                _titleOpacity,
+                titleOpacity,
               ),
             ),
             title: Opacity(
-              opacity: _titleOpacity,
+              opacity: titleOpacity,
               child: Text(
                 product.name,
                 maxLines: 1,
@@ -138,109 +233,222 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
           ),
         ],
         body: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 12),
-
-              ProductHeader(
-                name: product.name,
-                brand: product.brandId ?? "Unknown Brand",
-              ),
-
-              const SizedBox(height: 12),
-
-              PriceSection(
-                currentPrice: product.effectivePrice,
-                oldPrice: product.price,
-                discountPercent: product.discountPercent,
-              ),
-
-              const SizedBox(height: 16),
-
-              StockStatus(stock: totalStock),
-              const SizedBox(height: 16),
-
-              QuantitySection(
-                quantity: productState.quantity,
-                onIncrease: () {
-                  ref.read(productDetailsNotifierProvider.notifier).increaseQuantity();
-                },
-                onDecrease: () {
-                  ref.read(productDetailsNotifierProvider.notifier).decreaseQuantity();
-                },
-              ),
-              if (product.variants.isNotEmpty) ...[
-                const SizedBox(height: 20),
-
-                VariantSection(
-                  variants: product.variants,
-                  onVariantChanged: (variant) {
-                    ref
-                        .read(productDetailsNotifierProvider.notifier)
-                        .selectVariant(variant);
-                  },
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxContentWidth),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: context.paddingSizeDefault,
                 ),
-              ],
-              const SizedBox(height: 20),
-
-              if (product.description != null &&
-                  product.description!.isNotEmpty)
-                DescriptionSection(description: product.description!),
-
-              const SizedBox(height: 20),
-
-              if (product.dimensions != null)
-                SpecificationSection(
-                  dimensions: product.dimensions!,
-                  weight: product.weight,
-                  sku: product.sku,
-                  tags: product.tags,
+                child: _DetailsBody(
+                  product: product,
+                  productState: productState,
+                  totalStock: totalStock,
+                  productId: productId,
                 ),
-              const SizedBox(height: 20),
-
-              ReviewPreviewSection(productId: widget.productId),
-
-              const SizedBox(height: 100),
-            ],
+              ),
+            ),
           ),
         ),
       ),
-
       bottomNavigationBar: BottomActionBar(
-        productId: widget.productId,
-        variantId: activeVariantId!,
-        onAddToCart: () async{
-          print(AuthStorage.accessToken);
-          if(AuthStorage.accessToken == null){
-            // final res  = await context.pushNamed(AppRoutesName.login);
-            // if(res == true){
-            //   loadNecessaryData(ref);
-            // }
-            AppSnackBar.info(context: context,"Please login to add to cart");
-            return;
-          }
-          await ref.read(cartNotifierProvider.notifier).addToCart(
-            variantId: ref.read(productDetailsNotifierProvider)
-                .selectedVariant?.id ??
-                product.variants.first.id,
-            quantity: ref.read(productDetailsNotifierProvider).quantity,
-          );
-          if(ref.watch(cartNotifierProvider).failure != null){
-            AppSnackBar.error(context: context,ref.watch(cartNotifierProvider).failure!.message);
-          } else {
-            AppSnackBar.success(context: context,"Added to cart");
-          }
-        },
-        onBuyNow: () {
-          if(AuthStorage.accessToken == null){
-            AppSnackBar.info(context: context,"Please login to buy now");
-            return;
-          }
-          context.pushNamed(AppRoutesName.checkout);
-        },
+        productId: productId,
+        variantId: activeVariantId,
+        onAddToCart: onAddToCart,
+        onBuyNow: onBuyNow,
       ),
+    );
+  }
+}
+
+// ============================================================
+// DESKTOP — two-pane layout: sticky image left, scrollable info right
+// ============================================================
+
+class _DesktopProductDetails extends ConsumerWidget {
+  const _DesktopProductDetails({
+    required this.product,
+    required this.productState,
+    required this.activeVariantId,
+    required this.totalStock,
+    required this.productId,
+    required this.onAddToCart,
+    required this.onBuyNow,
+  });
+
+  final dynamic product;
+  final dynamic productState;
+  final String activeVariantId;
+  final int totalStock;
+  final String productId;
+  final VoidCallback onAddToCart;
+  final VoidCallback onBuyNow;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          product.name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        elevation: 0.5,
+      ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1200),
+          child: Padding(
+            padding: EdgeInsets.all(context.paddingSizeExtraLarge),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Sticky image column — stays put while the right side scrolls.
+                Expanded(
+                  flex: 5,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(context.radiusLarge),
+                    child: AspectRatio(
+                      aspectRatio: 1,
+                      child: ProductImageCarousel(
+                        images: product.images,
+                        variantId: activeVariantId,
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: context.paddingSizeExtraLarge),
+                // Scrollable info + sticky action bar.
+                Expanded(
+                  flex: 4,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: SingleChildScrollView(
+                          child: _DetailsBody(
+                            product: product,
+                            productState: productState,
+                            totalStock: totalStock,
+                            productId: productId,
+                            showTitle: true,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: context.paddingSizeDefault),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: theme.cardColor,
+                          borderRadius: BorderRadius.circular(context.radiusLarge),
+                          border: Border.all(color: theme.dividerColor),
+                        ),
+                        child: BottomActionBar(
+                          productId: productId,
+                          variantId: activeVariantId,
+                          onAddToCart: onAddToCart,
+                          onBuyNow: onBuyNow,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================
+// SHARED — details column content, used by all three breakpoints
+// ============================================================
+
+class _DetailsBody extends ConsumerWidget {
+  const _DetailsBody({
+    required this.product,
+    required this.productState,
+    required this.totalStock,
+    required this.productId,
+    this.showTitle = false,
+  });
+
+  final dynamic product;
+  final dynamic productState;
+  final int totalStock;
+  final String productId;
+  // Desktop has no collapsing header, so the product name needs to show
+  // up top instead of only in the (absent) app bar title.
+  final bool showTitle;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(height: context.paddingSizeSmall),
+
+        ProductHeader(
+          name: product.name,
+          brand: product.brandId ?? "Unknown Brand",
+        ),
+
+        SizedBox(height: context.paddingSizeSmall),
+
+        PriceSection(
+          currentPrice: product.effectivePrice,
+          oldPrice: product.price,
+          discountPercent: product.discountPercent,
+        ),
+
+        SizedBox(height: context.paddingSizeDefault),
+
+        StockStatus(stock: totalStock),
+        SizedBox(height: context.paddingSizeDefault),
+
+        QuantitySection(
+          quantity: productState.quantity,
+          onIncrease: () {
+            ref.read(productDetailsNotifierProvider.notifier).increaseQuantity();
+          },
+          onDecrease: () {
+            ref.read(productDetailsNotifierProvider.notifier).decreaseQuantity();
+          },
+        ),
+        if (product.variants.isNotEmpty) ...[
+          SizedBox(height: context.paddingSizeExtraLarge),
+          VariantSection(
+            variants: product.variants,
+            onVariantChanged: (variant) {
+              ref.read(productDetailsNotifierProvider.notifier).selectVariant(variant);
+            },
+          ),
+        ],
+        SizedBox(height: context.paddingSizeExtraLarge),
+
+        if (product.description != null && product.description!.isNotEmpty)
+          DescriptionSection(description: product.description!),
+
+        SizedBox(height: context.paddingSizeExtraLarge),
+
+        if (product.dimensions != null)
+          SpecificationSection(
+            dimensions: product.dimensions!,
+            weight: product.weight,
+            sku: product.sku,
+            tags: product.tags,
+          ),
+        SizedBox(height: context.paddingSizeExtraLarge),
+
+        ReviewPreviewSection(productId: productId),
+
+        // Extra bottom space only needed on mobile/tablet where the action
+        // bar floats over content; desktop's action bar sits in normal flow.
+        if (!showTitle) SizedBox(height: context.paddingSizeExtraLarge * 3),
+      ],
     );
   }
 }

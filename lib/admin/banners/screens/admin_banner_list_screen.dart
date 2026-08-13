@@ -1,10 +1,19 @@
+// admin/banners/screens/admin_banner_list_screen.dart
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ebazarx/admin/banners/notifiers/admin_banner_list_notifier.dart';
 import 'package:ebazarx/admin/banners/notifiers/admin_banner_notifier.dart';
 import 'package:ebazarx/admin/banners/providers/admin_banner_provider.dart';
 import 'package:ebazarx/admin/banners/states/admin_banner_list_state.dart';
 import 'package:ebazarx/app/app_routes_name.dart';
-import 'package:ebazarx/core/failures/failure.dart';
+import 'package:ebazarx/common/widgets/confirm_dialog.dart';
+import 'package:ebazarx/common/widgets/desktop_header.dart';
+import 'package:ebazarx/common/widgets/empty_state.dart';
+import 'package:ebazarx/common/widgets/error_view.dart';
+import 'package:ebazarx/common/widgets/page_loading_container.dart';
+import 'package:ebazarx/common/widgets/status_chip.dart';
+import 'package:ebazarx/core/utils/responsive.dart';
 import 'package:ebazarx/features/banner/domain/entities/banner.dart';
+import 'package:ebazarx/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -17,23 +26,21 @@ class AdminBannerListScreen extends ConsumerStatefulWidget {
       _AdminBannerListScreenState();
 }
 
-class _AdminBannerListScreenState
-    extends ConsumerState<AdminBannerListScreen> {
+class _AdminBannerListScreenState extends ConsumerState<AdminBannerListScreen> {
   final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    // Initial fetch
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(adminBannerListNotifierProvider.notifier).fetchBanners();
     });
-    // Listen for scroll to load more
     _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
   }
@@ -45,114 +52,244 @@ class _AdminBannerListScreenState
     }
   }
 
+  void _navigateToForm({BannerEntity? banner}) {
+    context.pushNamed(AppRoutesName.adminBannerFrom, extra: banner);
+  }
+
+  Future<void> _confirmDelete(String id) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => const ConfirmDialog(
+        title: 'Delete Banner',
+        message: 'Are you sure you want to delete this banner? This action cannot be undone.',
+        confirmLabel: 'Delete',
+      ),
+    );
+    if (confirmed == true) {
+      ref.read(adminBannerNotifierProvider.notifier).deleteBanner(id);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final listState = ref.watch(adminBannerListNotifierProvider);
     final notifier = ref.read(adminBannerListNotifierProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Banners'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => notifier.refresh(),
+      backgroundColor: theme.colorScheme.surface,
+      body: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            context.paddingSizeLarge,
+            context.paddingSizeLarge,
+            context.paddingSizeLarge,
+            0,
           ),
-        ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Expanded(
+                    child: DesktopHeader(
+                      title: 'Banners',
+                      subtitle: 'Manage homepage promotional banners',
+                    ),
+                  ),
+                  SizedBox(width: context.paddingSizeSmall),
+                  IconButton(
+                    icon: const Icon(Icons.refresh_rounded),
+                    onPressed: () => notifier.refresh(),
+                    tooltip: 'Refresh',
+                  ),
+                ],
+              ),
+              SizedBox(height: context.paddingSizeExtraLarge),
+              Expanded(
+                child: _BannerBody(state: listState, notifier: notifier),
+              ),
+            ],
+          ),
+        ),
       ),
-      body: _buildBody(listState, notifier),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _navigateToForm(context),
-        child: const Icon(Icons.add),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _navigateToForm(),
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('New Banner'),
       ),
     );
   }
+}
 
-  Widget _buildBody(
-      AdminBannerListState state,
-      AdminBannerListNotifier notifier,
-      ) {
+// ================================
+// Body: loading / error / empty / grid
+// ================================
+class _BannerBody extends ConsumerWidget {
+  const _BannerBody({required this.state, required this.notifier});
+
+  final AdminBannerListState state;
+  final AdminBannerListNotifier notifier;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     if (state.isLoading && state.banners.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingContainer();
     }
 
     if (state.failure != null && state.banners.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('Error: ${state.failure!.message}'),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => notifier.fetchBanners(),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
+      return ErrorView(
+        failure: state.failure!,
+        onRetry: () => notifier.fetchBanners(),
       );
     }
 
+    if (state.banners.isEmpty) {
+      return EmptyState(
+        icon: Icons.image_outlined,
+        title: 'No banners yet',
+        message: 'Create a banner to promote deals and campaigns on the home screen.',
+        buttonText: 'Add Banner',
+        buttonIcon: Icons.add_rounded,
+        onPressed: () => context.pushNamed(AppRoutesName.adminBannerFrom),
+      );
+    }
+
+    final screen = context.findAncestorStateOfType<_AdminBannerListScreenState>();
+
     return RefreshIndicator(
       onRefresh: () => notifier.refresh(),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final crossAxisCount = _getCrossAxisCount(constraints.maxWidth);
-          return GridView.builder(
-            controller: _scrollController,
-            padding: const EdgeInsets.all(16),
-            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: crossAxisCount == 1
-                  ? double.infinity
-                  : (crossAxisCount == 2 ? 400 : 300),
-              childAspectRatio: 1.2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-            ),
-            itemCount: state.banners.length + (state.hasMore ? 1 : 0),
-            itemBuilder: (context, index) {
-              if (index == state.banners.length && state.hasMore) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              final banner = state.banners[index];
-              return _BannerCard(
-                banner: banner,
-                onEdit: () => _navigateToForm(context, banner: banner),
-                onDelete: () => _confirmDelete(context, banner.id),
-              );
-            },
+      child: GridView.builder(
+        controller: screen?._scrollController,
+        padding: EdgeInsets.only(bottom: context.paddingSizeExtraLarge),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: context.responsive<int>(mobile: 1, tablet: 2, desktop: 3),
+          childAspectRatio: context.isMobile ? 1.5 : 1.15,
+          crossAxisSpacing: context.paddingSizeDefault,
+          mainAxisSpacing: context.paddingSizeDefault,
+        ),
+        itemCount: state.banners.length + (state.hasMore ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index == state.banners.length) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(12),
+                child: SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            );
+          }
+          final banner = state.banners[index];
+          return _BannerCard(
+            banner: banner,
+            onEdit: () => screen?._navigateToForm(banner: banner),
+            onDelete: () => screen?._confirmDelete(banner.id),
           );
         },
       ),
     );
   }
+}
 
-  int _getCrossAxisCount(double width) {
-    if (width < 600) return 1; // mobile
-    if (width < 1200) return 2; // tablet
-    return 3; // desktop
-  }
+// ================================
+// Banner Card
+// ================================
+class _BannerCard extends StatelessWidget {
+  final BannerEntity banner;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
-  void _navigateToForm(BuildContext context, {BannerEntity? banner}) {
-    context.pushNamed(AppRoutesName.adminBannerFrom, extra: banner);
-  }
+  const _BannerCard({required this.banner, this.onEdit, this.onDelete});
 
-  void _confirmDelete(BuildContext context, String id) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Banner'),
-        content: const Text('Are you sure you want to delete this banner?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(context.radiusLarge),
+        border: Border.all(color: theme.dividerColor),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                CachedNetworkImage(
+                  imageUrl: banner.imageUrl,
+                  fit: BoxFit.cover,
+                  placeholder: (_, __) => Container(
+                    color: theme.dividerColor.withValues(alpha: 0.2),
+                  ),
+                  errorWidget: (_, __, ___) => Container(
+                    color: theme.dividerColor.withValues(alpha: 0.2),
+                    child: Icon(
+                      Icons.broken_image_outlined,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: context.paddingSizeSmall,
+                  left: context.paddingSizeSmall,
+                  child: StatusChip(
+                    status: banner.isActive ? 'Active' : 'Inactive',
+                  ),
+                ),
+                Positioned(
+                  top: context.paddingSizeExtraSmall,
+                  right: context.paddingSizeExtraSmall,
+                  child: Row(
+                    children: [
+                      _RoundIconButton(
+                        icon: Icons.edit_outlined,
+                        onTap: onEdit,
+                      ),
+                      SizedBox(width: 6),
+                      _RoundIconButton(
+                        icon: Icons.delete_outline_rounded,
+                        color: AppColors.error,
+                        onTap: onDelete,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              ref.read(adminBannerNotifierProvider.notifier).deleteBanner(id);
-            },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          Padding(
+            padding: EdgeInsets.all(context.paddingSizeSmall),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  banner.title,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (banner.description.isNotEmpty) ...[
+                  SizedBox(height: 2),
+                  Text(
+                    banner.description,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
         ],
       ),
@@ -160,80 +297,25 @@ class _AdminBannerListScreenState
   }
 }
 
-class _BannerCard extends StatelessWidget {
-  final BannerEntity banner;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
+class _RoundIconButton extends StatelessWidget {
+  const _RoundIconButton({required this.icon, this.color, this.onTap});
 
-  const _BannerCard({
-    required this.banner,
-    required this.onEdit,
-    required this.onDelete,
-  });
+  final IconData icon;
+  final Color? color;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Image.network(
-              banner.imageUrl,
-              fit: BoxFit.cover,
-              width: double.infinity,
-              errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  banner.title,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (banner.description.isNotEmpty)
-                  Text(
-                    banner.description,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                  ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Chip(
-                      label: Text(banner.isActive ? 'Active' : 'Inactive'),
-                      backgroundColor:
-                      banner.isActive ? Colors.green[100] : Colors.grey[300],
-                      labelStyle: TextStyle(
-                        fontSize: 10,
-                        color: banner.isActive ? Colors.green[800] : Colors.grey[700],
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit, size: 18),
-                          onPressed: onEdit,
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, size: 18, color: Colors.red),
-                          onPressed: onDelete,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
+    return Material(
+      color: Colors.black.withValues(alpha: 0.45),
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Padding(
+          padding: const EdgeInsets.all(6),
+          child: Icon(icon, size: 16, color: color ?? Colors.white),
+        ),
       ),
     );
   }

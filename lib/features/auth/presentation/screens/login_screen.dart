@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:ebazarx/app/app_routes_name.dart';
+import 'package:ebazarx/app/assets_path.dart';
 import 'package:ebazarx/common/utils/invalidate_providers.dart';
 import 'package:ebazarx/common/utils/load_necessary_data.dart';
 import 'package:ebazarx/common/utils/styles.dart';
@@ -200,8 +201,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             borderRadius: BorderRadius.circular(18),
             gradient: LinearGradient(
               colors: [
-                theme.colorScheme.primary.withOpacity(0.85),
-                theme.colorScheme.primary.withOpacity(0.55),
+                Colors.white.withOpacity(0.85),
+                Colors.white.withOpacity(0.55),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -214,11 +215,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
             ],
           ),
-          child: const Icon(
-            Icons.storefront_rounded,
-            color: Colors.white,
-            size: 28,
-          ),
+          child: Image.asset(AssetsPath.logoRaw)
         ),
         const SizedBox(height: 20),
         Text(

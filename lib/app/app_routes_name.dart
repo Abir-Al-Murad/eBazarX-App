@@ -11,6 +11,7 @@ class AppRoutesName{
   static const String profile = '/auth/me';
   static const String orders = '/orders/my-orders';
   static const String orderDetails = '/orderDetails';
+  static const String otpScreen = '/otpScreen';
   static const String wishlist = '/wishlist';
   static const String addAddress = '/addresses';
   static const String address = '/customer/addresses/';
@@ -27,6 +28,7 @@ class AppRoutesName{
   static const String dashboard = "/dashboard";
   static const String productManagement = "/product-management";
   static const String productDetails = "/productDetails";
+  static const String applySeller = "/apply-seller";
 
 
   static const String addEditProduct = "/add-edit-product";

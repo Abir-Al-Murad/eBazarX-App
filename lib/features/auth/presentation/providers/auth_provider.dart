@@ -5,6 +5,7 @@ import 'package:ebazarx/features/auth/data/repositories/auth_repository_impl.dar
 import 'package:ebazarx/features/auth/domain/usecases/login_usecase.dart';
 import 'package:ebazarx/features/auth/domain/usecases/registration_usecase.dart';
 import 'package:ebazarx/features/auth/domain/usecases/logout_usecase.dart';
+import 'package:ebazarx/features/auth/domain/usecases/request_registration_otp_usecase.dart';
 import 'package:ebazarx/features/auth/presentation/notifiers/auth_notifier.dart';
 import 'package:ebazarx/features/auth/presentation/states/auth_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,9 +16,11 @@ final authRepositoryProvider = Provider((ref)=>AuthRepositoryImpl(ref.read(authR
 final loginUseCaseProvider = Provider((ref)=>LoginUseCase(ref.read(authRepositoryProvider)));
 final registrationUseCaseProvider = Provider((ref)=>RegistrationUseCase(ref.read(authRepositoryProvider)));
 final logoutUseCaseProvider = Provider((ref)=>LogoutUseCase(ref.read(authRepositoryProvider)));
+final requestRegistrationOtpUseCaseProvider = Provider((ref)=>RequestRegistrationOtpUseCase(ref.read(authRepositoryProvider)));
 final authNotifierProvider = StateNotifierProvider<AuthNotifier,AuthState>((ref){
   final loginUseCase = ref.read(loginUseCaseProvider);
   final registrationUseCase = ref.read(registrationUseCaseProvider);
   final logoutUseCase = ref.read(logoutUseCaseProvider);
-  return AuthNotifier(loginUseCase,registrationUseCase,logoutUseCase);
+  final requestRegistrationOtpUseCase = ref.read(requestRegistrationOtpUseCaseProvider);
+  return AuthNotifier(loginUseCase,registrationUseCase,logoutUseCase,requestRegistrationOtpUseCase);
 });

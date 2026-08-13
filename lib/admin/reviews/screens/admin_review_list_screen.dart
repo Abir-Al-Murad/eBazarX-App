@@ -1,11 +1,16 @@
 // admin/reviews/presentation/screens/admin_review_list_screen.dart
-
 import 'package:ebazarx/admin/reviews/notifiers/admin_review_list_notifier.dart';
 import 'package:ebazarx/admin/reviews/providers/admin_review_providers.dart';
 import 'package:ebazarx/admin/reviews/screens/admin_review_details_screen.dart';
 import 'package:ebazarx/admin/reviews/states/admin_review_list_state.dart';
+import 'package:ebazarx/common/widgets/desktop_header.dart';
+import 'package:ebazarx/common/widgets/empty_state.dart';
+import 'package:ebazarx/common/widgets/page_loading_container.dart';
+import 'package:ebazarx/common/widgets/status_chip.dart';
+import 'package:ebazarx/core/utils/responsive.dart';
 import 'package:ebazarx/features/reviews/domain/entities/review_entity.dart';
 import 'package:ebazarx/features/reviews/domain/entities/review_report_entity.dart';
+import 'package:ebazarx/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -18,24 +23,28 @@ class AdminReviewListScreen extends ConsumerStatefulWidget {
       _AdminReviewListScreenState();
 }
 
-class _AdminReviewListScreenState
-    extends ConsumerState<AdminReviewListScreen>
+class _AdminReviewListScreenState extends ConsumerState<AdminReviewListScreen>
     with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-
+  late final TabController _tabController;
   final ScrollController _reviewScrollController = ScrollController();
   final ScrollController _reportScrollController = ScrollController();
 
-  // Filter state
   String? _productIdFilter;
   String? _userIdFilter;
   bool? _isHiddenFilter;
   bool? _includeDeletedFilter;
 
+  bool get _hasActiveFilters =>
+      _productIdFilter != null ||
+          _userIdFilter != null ||
+          _isHiddenFilter != null ||
+          (_includeDeletedFilter ?? false);
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() => setState(() {}));
 
     _reviewScrollController.addListener(_onReviewScroll);
     _reportScrollController.addListener(_onReportScroll);
@@ -50,7 +59,9 @@ class _AdminReviewListScreenState
   @override
   void dispose() {
     _tabController.dispose();
+    _reviewScrollController.removeListener(_onReviewScroll);
     _reviewScrollController.dispose();
+    _reportScrollController.removeListener(_onReportScroll);
     _reportScrollController.dispose();
     super.dispose();
   }
@@ -69,184 +80,15 @@ class _AdminReviewListScreenState
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final state = ref.watch(adminReviewListNotifierProvider);
-    final notifier = ref.read(adminReviewListNotifierProvider.notifier);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Reviews'),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Reviews', icon: Icon(Icons.reviews)),
-            Tab(text: 'Reports', icon: Icon(Icons.report)),
-          ],
-        ),
-        actions: [
-          if (_tabController.index == 0)
-            IconButton(
-              icon: const Icon(Icons.filter_list),
-              onPressed: () => _showFilterDialog(context),
-            ),
-          if (_tabController.index == 0)
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: () => notifier.refreshReviews(),
-            ),
-          if (_tabController.index == 1)
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: () => notifier.refreshReports(),
-            ),
-        ],
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          // REVIEWS TAB
-          _buildReviewsTab(state, notifier),
-          // REPORTS TAB
-          _buildReportsTab(state, notifier),
-        ],
-      ),
-    );
-  }
-
-  // ============================================================
-  // REVIEWS TAB
-  // ============================================================
-
-  Widget _buildReviewsTab(
-      AdminReviewListState state,
-      AdminReviewListNotifier notifier,
-      ) {
-    if (state.isLoadingReviews && state.reviews.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (state.reviews.isEmpty) {
-      return const Center(child: Text('No reviews found'));
-    }
-
-    return RefreshIndicator(
-      onRefresh: () => notifier.refreshReviews(),
-      child: ListView.builder(
-        controller: _reviewScrollController,
-        itemCount: state.reviews.length + (state.hasMoreReviews ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index == state.reviews.length) {
-            return const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Center(child: CircularProgressIndicator()),
-            );
-          }
-          final review = state.reviews[index];
-          return _ReviewTile(
-            review: review,
-            onTap: () => _navigateToDetail(context, review.id),
-          );
-        },
-      ),
-    );
-  }
-
-  // ============================================================
-  // REPORTS TAB
-  // ============================================================
-
-  Widget _buildReportsTab(
-      AdminReviewListState state,
-      AdminReviewListNotifier notifier,
-      ) {
-    if (state.isLoadingReports && state.reports.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (state.reports.isEmpty) {
-      return const Center(child: Text('No pending reports'));
-    }
-
-    return RefreshIndicator(
-      onRefresh: () => notifier.refreshReports(),
-      child: ListView.builder(
-        controller: _reportScrollController,
-        itemCount: state.reports.length + (state.hasMoreReports ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index == state.reports.length) {
-            return const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Center(child: CircularProgressIndicator()),
-            );
-          }
-          final report = state.reports[index];
-          return _ReportTile(
-            report: report,
-            onTap: () => _navigateToDetail(context, report.reviewId),
-          );
-        },
-      ),
-    );
-  }
-
-  // ============================================================
-  // FILTER DIALOG
-  // ============================================================
-
-  void _showFilterDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Filter Reviews'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              decoration: const InputDecoration(labelText: 'Product ID'),
-              onChanged: (v) => _productIdFilter = v.isNotEmpty ? v : null,
-            ),
-            TextField(
-              decoration: const InputDecoration(labelText: 'User ID'),
-              onChanged: (v) => _userIdFilter = v.isNotEmpty ? v : null,
-            ),
-            SwitchListTile(
-              title: const Text('Hidden'),
-              value: _isHiddenFilter ?? false,
-              onChanged: (v) => _isHiddenFilter = v,
-            ),
-            SwitchListTile(
-              title: const Text('Include Deleted'),
-              value: _includeDeletedFilter ?? false,
-              onChanged: (v) => _includeDeletedFilter = v,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              final notifier =
-              ref.read(adminReviewListNotifierProvider.notifier);
-              notifier.applyFilters(
-                productId: _productIdFilter,
-                userId: _userIdFilter,
-                isHidden: _isHiddenFilter,
-                includeDeleted: _includeDeletedFilter,
-              );
-            },
-            child: const Text('Apply'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _resetFilters();
-            },
-            child: const Text('Clear'),
-          ),
-        ],
-      ),
-    );
+  void _navigateToDetail(String reviewId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => AdminReviewDetailScreen(reviewId: reviewId)),
+    ).then((_) {
+      final notifier = ref.read(adminReviewListNotifierProvider.notifier);
+      notifier.refreshReviews();
+      notifier.refreshReports();
+    });
   }
 
   void _resetFilters() {
@@ -259,145 +101,585 @@ class _AdminReviewListScreenState
     ref.read(adminReviewListNotifierProvider.notifier).resetFilters();
   }
 
-  void _navigateToDetail(BuildContext context, String reviewId) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AdminReviewDetailScreen(reviewId: reviewId),
-      ),
-    ).then((_) {
-      // Refresh lists when returning
-      final notifier = ref.read(adminReviewListNotifierProvider.notifier);
-      notifier.refreshReviews();
-      notifier.refreshReports();
-    });
-  }
-}
+  Future<void> _showFilterDialog() async {
+    String? productId = _productIdFilter;
+    String? userId = _userIdFilter;
+    bool? isHidden = _isHiddenFilter;
+    bool includeDeleted = _includeDeletedFilter ?? false;
 
-// ============================================================
-// REVIEW TILE
-// ============================================================
+    final theme = Theme.of(context);
 
-class _ReviewTile extends StatelessWidget {
-  final ReviewEntity review;
-  final VoidCallback onTap;
-
-  const _ReviewTile({required this.review, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: ListTile(
-        leading: CircleAvatar(
-          child: Text(review.rating.toString()),
-          backgroundColor: _getRatingColor(review.rating),
-        ),
-        title: Text('Product: ${review.productId}'),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('User: ${review.userId}'),
-            if (review.comment != null)
-              Text(
-                review.comment!,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            Row(
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: theme.cardColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(context.radiusLarge),
+          ),
+          title: const Text('Filter Reviews'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                if (review.isHidden)
-                  const Chip(
-                    label: Text('Hidden'),
-                    backgroundColor: Colors.red,
-                    labelStyle: TextStyle(color: Colors.white),
-                  ),
-                if (review.isVerified)
-                  const Chip(
-                    label: Text('Verified'),
-                    backgroundColor: Colors.green,
-                    labelStyle: TextStyle(color: Colors.white),
-                  ),
-                Text(
-                  DateFormat('yyyy-MM-dd').format(review.createdAt),
-                  style: Theme.of(context).textTheme.bodySmall,
+                TextFormField(
+                  initialValue: productId,
+                  decoration: const InputDecoration(labelText: 'Product ID'),
+                  onChanged: (v) => productId = v.isNotEmpty ? v : null,
+                ),
+                SizedBox(height: context.paddingSizeSmall),
+                TextFormField(
+                  initialValue: userId,
+                  decoration: const InputDecoration(labelText: 'User ID'),
+                  onChanged: (v) => userId = v.isNotEmpty ? v : null,
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Hidden only'),
+                  value: isHidden ?? false,
+                  onChanged: (v) => setDialogState(() => isHidden = v),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Include Deleted'),
+                  value: includeDeleted,
+                  onChanged: (v) => setDialogState(() => includeDeleted = v),
                 ),
               ],
             ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _resetFilters();
+              },
+              child: const Text('Clear'),
+            ),
+            FilledButton(
+              onPressed: () {
+                setState(() {
+                  _productIdFilter = productId;
+                  _userIdFilter = userId;
+                  _isHiddenFilter = isHidden;
+                  _includeDeletedFilter = includeDeleted;
+                });
+                Navigator.pop(ctx);
+                ref.read(adminReviewListNotifierProvider.notifier).applyFilters(
+                  productId: _productIdFilter,
+                  userId: _userIdFilter,
+                  isHidden: _isHiddenFilter,
+                  includeDeleted: _includeDeletedFilter,
+                );
+              },
+              child: const Text('Apply'),
+            ),
           ],
         ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.thumb_up,
-              color: Colors.grey,
-              size: 16,
-            ),
-            Text(' ${review.likes}'),
-            const SizedBox(width: 8),
-            Icon(
-              Icons.thumb_down,
-              color: Colors.grey,
-              size: 16,
-            ),
-            Text(' ${review.dislikes}'),
-          ],
-        ),
-        onTap: onTap,
-        isThreeLine: true,
       ),
     );
   }
 
-  Color _getRatingColor(int rating) {
-    if (rating >= 4) return Colors.green;
-    if (rating >= 3) return Colors.orange;
-    return Colors.red;
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final state = ref.watch(adminReviewListNotifierProvider);
+    final notifier = ref.read(adminReviewListNotifierProvider.notifier);
+    final isReviewsTab = _tabController.index == 0;
+
+    return Scaffold(
+      backgroundColor: theme.colorScheme.surface,
+      body: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            context.paddingSizeLarge,
+            context.paddingSizeLarge,
+            context.paddingSizeLarge,
+            0,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Expanded(
+                    child: DesktopHeader(
+                      title: 'Reviews',
+                      subtitle: 'Moderate customer reviews and reported content',
+                    ),
+                  ),
+                  if (isReviewsTab) ...[
+                    SizedBox(width: context.paddingSizeSmall),
+                    _HeaderIconButton(
+                      icon: Icons.filter_list_rounded,
+                      tooltip: 'Filters',
+                      highlighted: _hasActiveFilters,
+                      onTap: _showFilterDialog,
+                    ),
+                  ],
+                  SizedBox(width: context.paddingSizeSmall),
+                  IconButton(
+                    icon: const Icon(Icons.refresh_rounded),
+                    tooltip: 'Refresh',
+                    onPressed: () =>
+                    isReviewsTab ? notifier.refreshReviews() : notifier.refreshReports(),
+                  ),
+                ],
+              ),
+              SizedBox(height: context.paddingSizeExtraLarge),
+              Container(
+                decoration: BoxDecoration(
+                  color: theme.cardColor,
+                  borderRadius: BorderRadius.circular(context.radiusLarge),
+                  border: Border.all(color: theme.dividerColor),
+                ),
+                padding: EdgeInsets.symmetric(
+                  horizontal: context.paddingSizeSmall,
+                  vertical: context.paddingSizeExtraSmall,
+                ),
+                child: TabBar(
+                  controller: _tabController,
+                  tabAlignment: context.isDesktop ? TabAlignment.fill : TabAlignment.start,
+                  isScrollable: !context.isDesktop,
+                  splashBorderRadius: BorderRadius.circular(context.radiusLarge),
+                  indicator: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    borderRadius: BorderRadius.circular(context.radiusLarge),
+                  ),
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  dividerColor: Colors.transparent,
+                  labelColor: theme.colorScheme.onPrimary,
+                  unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+                  labelStyle: TextStyle(
+                    fontSize: context.fontSizeSmall,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  unselectedLabelStyle: TextStyle(
+                    fontSize: context.fontSizeSmall,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  labelPadding: EdgeInsets.symmetric(horizontal: context.paddingSizeDefault),
+                  tabs: [
+                    Tab(text: 'Reviews (${state.reviews.length})'),
+                    Tab(text: 'Reports (${state.reports.length})'),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    RefreshIndicator(
+                      onRefresh: () => notifier.refreshReviews(),
+                      child: _ReviewsTab(
+                        isLoading: state.isLoadingReviews,
+                        reviews: state.reviews,
+                        hasMore: state.hasMoreReviews,
+                        scrollController: _reviewScrollController,
+                        onTap: (id) => _navigateToDetail(id),
+                      ),
+                    ),
+                    RefreshIndicator(
+                      onRefresh: () => notifier.refreshReports(),
+                      child: _ReportsTab(
+                        isLoading: state.isLoadingReports,
+                        reports: state.reports,
+                        hasMore: state.hasMoreReports,
+                        scrollController: _reportScrollController,
+                        onTap: (id) => _navigateToDetail(id),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
-// ============================================================
-// REPORT TILE
-// ============================================================
+// ================================
+// Header icon button (with active-filter dot, reused pattern from category screen)
+// ================================
+class _HeaderIconButton extends StatelessWidget {
+  const _HeaderIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+    this.highlighted = false,
+  });
 
-class _ReportTile extends StatelessWidget {
-  final ReviewReportEntity report;
+  final IconData icon;
+  final String tooltip;
+  final bool highlighted;
   final VoidCallback onTap;
-
-  const _ReportTile({required this.report, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: ListTile(
-        leading: const Icon(Icons.report, color: Colors.red),
-        title: Text('Review: ${report.reviewId}'),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Reason: ${report.reason}'),
-            if (report.description != null)
-              Text(
-                report.description!,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+    final theme = Theme.of(context);
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(context.radiusDefault),
+            border: Border.all(color: theme.dividerColor),
+          ),
+          child: IconButton(icon: Icon(icon, size: 20), tooltip: tooltip, onPressed: onTap),
+        ),
+        if (highlighted)
+          Positioned(
+            top: 6,
+            right: 6,
+            child: Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary,
+                shape: BoxShape.circle,
+                border: Border.all(color: theme.cardColor, width: 1.5),
               ),
-            Text(
-              'Reported: ${DateFormat('yyyy-MM-dd').format(report.createdAt)}',
-              style: Theme.of(context).textTheme.bodySmall,
             ),
-          ],
+          ),
+      ],
+    );
+  }
+}
+
+// ================================
+// REVIEWS TAB
+// ================================
+class _ReviewsTab extends StatelessWidget {
+  const _ReviewsTab({
+    required this.isLoading,
+    required this.reviews,
+    required this.hasMore,
+    required this.scrollController,
+    required this.onTap,
+  });
+
+  final bool isLoading;
+  final List<ReviewEntity> reviews;
+  final bool hasMore;
+  final ScrollController scrollController;
+  final ValueChanged<String> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading && reviews.isEmpty) {
+      return const LoadingContainer();
+    }
+
+    if (reviews.isEmpty) {
+      return const EmptyState(
+        icon: Icons.reviews_outlined,
+        title: 'No reviews found',
+        message: 'Try adjusting your filters, or check back once customers leave reviews.',
+      );
+    }
+
+    return CustomScrollView(
+      controller: scrollController,
+      slivers: [
+        SliverPadding(
+          padding: EdgeInsets.symmetric(vertical: context.paddingSizeDefault),
+          sliver: SliverList.separated(
+            itemCount: reviews.length,
+            separatorBuilder: (_, __) => SizedBox(height: context.paddingSizeSmall),
+            itemBuilder: (context, index) => _ReviewCard(
+              review: reviews[index],
+              onTap: () => onTap(reviews[index].id),
+            ),
+          ),
         ),
-        trailing: report.resolved
-            ? const Chip(label: Text('Resolved'), backgroundColor: Colors.green)
-            : const Chip(
-          label: Text('Pending'),
-          backgroundColor: Colors.orange,
-        ),
+        if (hasMore)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: context.paddingSizeDefault),
+              child: const Center(
+                child: SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _ReviewCard extends StatelessWidget {
+  const _ReviewCard({required this.review, required this.onTap});
+
+  final ReviewEntity review;
+  final VoidCallback onTap;
+
+  Color _ratingColor() {
+    if (review.rating >= 4) return AppColors.success;
+    if (review.rating >= 3) return AppColors.warning;
+    return AppColors.error;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final ratingColor = _ratingColor();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(context.radiusLarge),
+        border: Border.all(color: theme.dividerColor),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
         onTap: onTap,
-        isThreeLine: true,
+        child: Padding(
+          padding: EdgeInsets.all(context.paddingSizeDefault),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: ratingColor.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.star_rounded, size: 14, color: ratingColor),
+                        Text(
+                          '${review.rating}',
+                          style: TextStyle(fontWeight: FontWeight.bold, color: ratingColor, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: context.paddingSizeSmall),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Product: ${review.productId}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        Text(
+                          'User: ${review.userId}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    DateFormat('dd MMM yyyy').format(review.createdAt),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+              if (review.comment != null) ...[
+                SizedBox(height: context.paddingSizeSmall),
+                Text(
+                  review.comment!,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ],
+              SizedBox(height: context.paddingSizeSmall),
+              Row(
+                children: [
+                  if (review.isHidden) ...[
+                    const StatusChip(status: 'Hidden', showDot: false),
+                    SizedBox(width: context.paddingSizeExtraSmall),
+                  ],
+                  if (review.isVerified) ...[
+                    const StatusChip(status: 'Verified', showDot: false),
+                    SizedBox(width: context.paddingSizeExtraSmall),
+                  ],
+                  const Spacer(),
+                  Icon(Icons.thumb_up_outlined, size: 15, color: theme.colorScheme.onSurfaceVariant),
+                  SizedBox(width: 3),
+                  Text('${review.likes}', style: theme.textTheme.labelSmall),
+                  SizedBox(width: context.paddingSizeSmall),
+                  Icon(Icons.thumb_down_outlined, size: 15, color: theme.colorScheme.onSurfaceVariant),
+                  SizedBox(width: 3),
+                  Text('${review.dislikes}', style: theme.textTheme.labelSmall),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ================================
+// REPORTS TAB
+// ================================
+class _ReportsTab extends StatelessWidget {
+  const _ReportsTab({
+    required this.isLoading,
+    required this.reports,
+    required this.hasMore,
+    required this.scrollController,
+    required this.onTap,
+  });
+
+  final bool isLoading;
+  final List<ReviewReportEntity> reports;
+  final bool hasMore;
+  final ScrollController scrollController;
+  final ValueChanged<String> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading && reports.isEmpty) {
+      return const LoadingContainer();
+    }
+
+    if (reports.isEmpty) {
+      return const EmptyState(
+        icon: Icons.flag_outlined,
+        title: 'No pending reports',
+        message: 'Reported reviews will show up here for moderation.',
+      );
+    }
+
+    return CustomScrollView(
+      controller: scrollController,
+      slivers: [
+        SliverPadding(
+          padding: EdgeInsets.symmetric(vertical: context.paddingSizeDefault),
+          sliver: SliverList.separated(
+            itemCount: reports.length,
+            separatorBuilder: (_, __) => SizedBox(height: context.paddingSizeSmall),
+            itemBuilder: (context, index) => _ReportCard(
+              report: reports[index],
+              onTap: () => onTap(reports[index].reviewId),
+            ),
+          ),
+        ),
+        if (hasMore)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: context.paddingSizeDefault),
+              child: const Center(
+                child: SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _ReportCard extends StatelessWidget {
+  const _ReportCard({required this.report, required this.onTap});
+
+  final ReviewReportEntity report;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(context.radiusLarge),
+        border: Border.all(color: theme.dividerColor),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: EdgeInsets.all(context.paddingSizeDefault),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: EdgeInsets.all(context.paddingSizeSmall),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.flag_rounded, size: 18, color: AppColors.error),
+              ),
+              SizedBox(width: context.paddingSizeSmall),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Review: ${report.reviewId}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        StatusChip(
+                          status: report.resolved ? 'Resolved' : 'Pending',
+                          showDot: false,
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Reason: ${report.reason}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    if (report.description != null) ...[
+                      SizedBox(height: 2),
+                      Text(
+                        report.description!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ],
+                    SizedBox(height: context.paddingSizeExtraSmall),
+                    Text(
+                      'Reported: ${DateFormat('dd MMM yyyy').format(report.createdAt)}',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

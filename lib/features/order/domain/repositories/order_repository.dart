@@ -61,4 +61,10 @@ abstract class OrderRepository {
     required String orderId,
     required String status,
   });
+
+
+  Future<OrderEntity> updateOrderPaymentStatus({
+    required String orderId,
+    required String paymentStatus,
+  });
 }

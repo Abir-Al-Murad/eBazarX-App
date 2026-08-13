@@ -1,10 +1,12 @@
 // admin/products/screens/admin_products_screen.dart
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:ebazarx/admin/products/notifiers/admin_product_action_notifier.dart';
-import 'package:ebazarx/admin/products/notifiers/admin_product_list_notifier.dart';
 import 'package:ebazarx/admin/products/providers/admin_product_providers.dart';
 import 'package:ebazarx/app/app_routes_name.dart';
-import 'package:ebazarx/common/utils/styles.dart';
+import 'package:ebazarx/common/widgets/desktop_header.dart';
+import 'package:ebazarx/common/widgets/empty_state.dart';
+import 'package:ebazarx/common/widgets/error_view.dart';
+import 'package:ebazarx/common/widgets/status_chip.dart';
+import 'package:ebazarx/core/failures/failure.dart';
 import 'package:ebazarx/core/utils/app_snackbar.dart';
 import 'package:ebazarx/core/utils/responsive.dart';
 import 'package:ebazarx/features/product/domain/entities/product_entity.dart';
@@ -26,7 +28,6 @@ class _AdminProductsScreenState extends ConsumerState<AdminProductsScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
   final _searchController = TextEditingController();
-  bool _showSearch = false;
 
   @override
   void initState() {
@@ -54,131 +55,215 @@ class _AdminProductsScreenState extends ConsumerState<AdminProductsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final listState = ref.watch(adminProductListNotifierProvider);
     final actionState = ref.watch(adminProductActionNotifierProvider);
 
     final allProducts = listState.products ?? <Product>[];
     final pendingProducts = actionState.pendingProduct ?? <Product>[];
-    final approvedCount = allProducts.where((p) => p.approvalStatus == 'approved').length;
-    final rejectedCount = allProducts.where((p) => p.approvalStatus == 'rejected').length;
+    final approvedCount =
+        allProducts.where((p) => p.approvalStatus == 'approved').length;
+    final rejectedCount =
+        allProducts.where((p) => p.approvalStatus == 'rejected').length;
 
     final query = _searchController.text.trim().toLowerCase();
     bool matchesQuery(Product p) =>
         query.isEmpty || p.name.toLowerCase().contains(query);
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: _showSearch
-            ? TextField(
-          controller: _searchController,
-          autofocus: true,
-          onChanged: (_) => setState(() {}),
-          style: context.bold.copyWith(fontSize: context.fontSizeLarge, fontWeight: FontWeight.w600),
-          decoration: const InputDecoration(
-            hintText: 'Search products...',
-            border: InputBorder.none,
+      backgroundColor: theme.colorScheme.surface,
+      body: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            context.paddingSizeLarge,
+            context.paddingSizeLarge,
+            context.paddingSizeLarge,
+            0,
           ),
-        )
-            : const Text('Product Management'),
-        actions: [
-          IconButton(
-            icon: Icon(_showSearch ? Icons.close : Icons.search),
-            onPressed: () => setState(() {
-              _showSearch = !_showSearch;
-              if (!_showSearch) _searchController.clear();
-            }),
-          ),
-          if (context.isDesktop)
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: _refreshAll,
-            ),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(56),
-          child: Container(
-            color: Theme.of(context).appBarTheme.backgroundColor ?? Theme.of(context).colorScheme.surface,
-            padding: EdgeInsets.symmetric(horizontal: context.paddingSizeSmall, vertical: context.paddingSizeExtraSmall),
-            child: TabBar(
-              controller: _tabController,
-              isScrollable: !context.isDesktop,
-              tabAlignment: context.isDesktop ? TabAlignment.fill : TabAlignment.start,
-              splashBorderRadius: BorderRadius.circular(context.radiusLarge),
-              indicator: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary,
-                borderRadius: BorderRadius.circular(context.radiusLarge),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Expanded(
+                    child: DesktopHeader(
+                      title: 'Product Management',
+                      subtitle: 'Manage your products',
+                    ),
+                  ),
+                  if (context.isDesktop)
+                    IconButton(
+                      icon: const Icon(Icons.refresh_rounded),
+                      onPressed: _refreshAll,
+                      tooltip: 'Refresh',
+                    ),
+                ],
               ),
-              indicatorSize: TabBarIndicatorSize.tab,
-              dividerColor: Colors.transparent,
-              labelColor: Theme.of(context).colorScheme.onPrimary,
-              unselectedLabelColor: Colors.grey,
-              labelStyle: TextStyle(fontSize: context.fontSizeSmall, fontWeight: FontWeight.w700),
-              unselectedLabelStyle: TextStyle(fontSize: context.fontSizeSmall, fontWeight: FontWeight.w500),
-              labelPadding: EdgeInsets.symmetric(horizontal: context.paddingSizeDefault),
-              tabs: [
-                Tab(text: 'All (${allProducts.length})'),
-                Tab(text: 'Pending (${pendingProducts.length})'),
-                Tab(text: 'Approved ($approvedCount)'),
-                Tab(text: 'Rejected ($rejectedCount)'),
-              ],
-            ),
+              SizedBox(height: context.paddingSizeExtraLarge),
+              _SearchField(
+                controller: _searchController,
+                onChanged: (_) => setState(() {}),
+              ),
+              SizedBox(height: context.paddingSizeDefault),
+              Container(
+                decoration: BoxDecoration(
+                  color: theme.cardColor,
+                  borderRadius: BorderRadius.circular(context.radiusLarge),
+                  border: Border.all(color: theme.dividerColor),
+                ),
+                padding: EdgeInsets.symmetric(
+                  horizontal: context.paddingSizeSmall,
+                  vertical: context.paddingSizeExtraSmall,
+                ),
+                child: TabBar(
+                  controller: _tabController,
+                  isScrollable: !context.isDesktop,
+                  tabAlignment:
+                  context.isDesktop ? TabAlignment.fill : TabAlignment.start,
+                  splashBorderRadius: BorderRadius.circular(context.radiusLarge),
+                  indicator: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    borderRadius: BorderRadius.circular(context.radiusLarge),
+                  ),
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  dividerColor: Colors.transparent,
+                  labelColor: theme.colorScheme.onPrimary,
+                  unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+                  labelStyle: TextStyle(
+                    fontSize: context.fontSizeSmall,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  unselectedLabelStyle: TextStyle(
+                    fontSize: context.fontSizeSmall,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  labelPadding:
+                  EdgeInsets.symmetric(horizontal: context.paddingSizeDefault),
+                  tabs: [
+                    Tab(text: 'All (${allProducts.length})'),
+                    Tab(text: 'Pending (${pendingProducts.length})'),
+                    Tab(text: 'Approved ($approvedCount)'),
+                    Tab(text: 'Rejected ($rejectedCount)'),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: () async => _refreshAll(),
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _ProductPanel(
+                        products: allProducts.where(matchesQuery).toList(),
+                        isLoading: listState.isLoading ?? false,
+                        isLoadingMore: listState.isLoadingMore ?? false,
+                        hasMore: listState.hasMore ?? true,
+                        failure: listState.failure,
+                        onRetry: _refreshAll,
+                        loadMore: () => ref
+                            .read(adminProductListNotifierProvider.notifier)
+                            .loadMore(),
+                      ),
+                      _ProductPanel(
+                        products: pendingProducts.where(matchesQuery).toList(),
+                        isPending: true,
+                        isLoading: actionState.isLoading ?? false,
+                        isLoadingMore: actionState.isLoadingMore ?? false,
+                        hasMore: actionState.hasMore ?? true,
+                        failure: actionState.failure,
+                        onRetry: () => ref
+                            .read(adminProductActionNotifierProvider.notifier)
+                            .fetchPendingProducts(),
+                        loadMore: () => ref
+                            .read(adminProductActionNotifierProvider.notifier)
+                            .loadMorePendingProduct(),
+                      ),
+                      _ProductPanel(
+                        products: allProducts
+                            .where((p) => p.approvalStatus == 'approved')
+                            .where(matchesQuery)
+                            .toList(),
+                        isLoading: listState.isLoading ?? false,
+                        isLoadingMore: listState.isLoadingMore ?? false,
+                        hasMore: listState.hasMore ?? true,
+                        failure: listState.failure,
+                        onRetry: _refreshAll,
+                        loadMore: () => ref
+                            .read(adminProductListNotifierProvider.notifier)
+                            .loadMore(),
+                      ),
+                      _ProductPanel(
+                        products: allProducts
+                            .where((p) => p.approvalStatus == 'rejected')
+                            .where(matchesQuery)
+                            .toList(),
+                        isLoading: listState.isLoading ?? false,
+                        isLoadingMore: listState.isLoadingMore ?? false,
+                        hasMore: listState.hasMore ?? true,
+                        failure: listState.failure,
+                        onRetry: _refreshAll,
+                        loadMore: () => ref
+                            .read(adminProductListNotifierProvider.notifier)
+                            .loadMore(),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
-      body: RefreshIndicator(
-        onRefresh: () async => _refreshAll(),
-        child: TabBarView(
-          controller: _tabController,
-          children: [
-            _ProductPanel(
-              products: allProducts.where(matchesQuery).toList(),
-              isLoading: listState.isLoading ?? false,
-              isLoadingMore: listState.isLoadingMore ?? false,
-              hasMore: listState.hasMore ?? true,
-              failure: listState.failure,
-              onRetry: _refreshAll,
-              loadMore: () => ref.read(adminProductListNotifierProvider.notifier).loadMore(),
-            ),
-            _ProductPanel(
-              products: pendingProducts.where(matchesQuery).toList(),
-              isPending: true,
-              isLoading: actionState.isLoading ?? false,
-              isLoadingMore: actionState.isLoadingMore ?? false,
-              hasMore: actionState.hasMore ?? true,
-              failure: actionState.failure,
-              onRetry: () => ref
-                  .read(adminProductActionNotifierProvider.notifier)
-                  .fetchPendingProducts(),
-              loadMore: () => ref
-                  .read(adminProductActionNotifierProvider.notifier)
-                  .loadMorePendingProduct(),
-            ),
-            _ProductPanel(
-              products: allProducts
-                  .where((p) => p.approvalStatus == 'approved')
-                  .where(matchesQuery)
-                  .toList(),
-              isLoading: listState.isLoading ?? false,
-              isLoadingMore: listState.isLoadingMore ?? false,
-              hasMore: listState.hasMore ?? true,
-              failure: listState.failure,
-              onRetry: _refreshAll,
-              loadMore: () => ref.read(adminProductListNotifierProvider.notifier).loadMore(),
-            ),
-            _ProductPanel(
-              products: allProducts
-                  .where((p) => p.approvalStatus == 'rejected')
-                  .where(matchesQuery)
-                  .toList(),
-              isLoading: listState.isLoading ?? false,
-              isLoadingMore: listState.isLoadingMore ?? false,
-              hasMore: listState.hasMore ?? true,
-              failure: listState.failure,
-              onRetry: _refreshAll,
-              loadMore: () => ref.read(adminProductListNotifierProvider.notifier).loadMore(),
-            ),
-          ],
+    );
+  }
+}
+
+// ================================
+// Search field
+// ================================
+class _SearchField extends StatelessWidget {
+  const _SearchField({required this.controller, required this.onChanged});
+
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      height: 44,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(context.radiusLarge),
+        border: Border.all(color: theme.dividerColor),
+      ),
+      child: TextField(
+        controller: controller,
+        onChanged: onChanged,
+        style: TextStyle(fontSize: context.fontSizeDefault),
+        decoration: InputDecoration(
+          isDense: true,
+          hintText: 'Search products...',
+          hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            size: 20,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          suffixIcon: controller.text.isEmpty
+              ? null
+              : IconButton(
+            icon: const Icon(Icons.close_rounded, size: 18),
+            onPressed: () {
+              controller.clear();
+              onChanged('');
+            },
+          ),
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.symmetric(
+            vertical: context.paddingSizeSmall,
+          ),
         ),
       ),
     );
@@ -194,7 +279,7 @@ class _ProductPanel extends ConsumerWidget {
   final bool isLoading;
   final bool isLoadingMore;
   final bool hasMore;
-  final Object? failure;
+  final Failure? failure;
   final VoidCallback onRetry;
   final VoidCallback loadMore;
 
@@ -212,15 +297,18 @@ class _ProductPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (isLoading && products.isEmpty) {
-      return _ProductShimmerList(isDesktop: context.isDesktop, isTablet: context.isTablet);
+      return _ProductShimmerList(
+        isDesktop: context.isDesktop,
+        isTablet: context.isTablet,
+      );
     }
 
     if (failure != null && products.isEmpty) {
-      return _ErrorState(message: failure.toString(), onRetry: onRetry);
+      return ErrorView(onRetry: onRetry, failure: failure!,);
     }
 
     if (products.isEmpty) {
-      return _EmptyState(isPending: isPending);
+      return EmptyState(title: isPending ? 'No pending products' : 'No products', message: "No products found.", icon: Icons.search_off_rounded,);
     }
 
     if (context.isDesktop) {
@@ -250,81 +338,6 @@ class _ProductPanel extends ConsumerWidget {
 }
 
 // ================================
-// Empty / Error states
-// ================================
-class _EmptyState extends StatelessWidget {
-  final bool isPending;
-  const _EmptyState({required this.isPending});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Padding(
-          padding: EdgeInsets.all(context.paddingSizeLarge),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                isPending ? Icons.hourglass_empty_rounded : Icons.inventory_2_outlined,
-                size: 64,
-                color: Theme.of(context).disabledColor,
-              ),
-              SizedBox(height: context.paddingSizeDefault),
-              Text(
-                isPending ? 'No pending products' : 'No products found',
-                style: TextStyle(
-                  fontSize: context.fontSizeLarge,
-                  fontWeight: FontWeight.w600,
-                  color: Theme.of(context).textTheme.bodyLarge?.color,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ErrorState extends StatelessWidget {
-  final String message;
-  final VoidCallback onRetry;
-  const _ErrorState({required this.message, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Padding(
-          padding: EdgeInsets.all(context.paddingSizeLarge),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.error_outline_rounded, size: 56, color: AppColors.error),
-              SizedBox(height: context.paddingSizeSmall),
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Theme.of(context).hintColor),
-              ),
-              SizedBox(height: context.paddingSizeDefault),
-              OutlinedButton.icon(
-                onPressed: onRetry,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ================================
 // Shimmer skeleton (mirrors real widget dimensions)
 // ================================
 class _ProductShimmerList extends StatelessWidget {
@@ -334,12 +347,13 @@ class _ProductShimmerList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final baseColor = Theme.of(context).cardColor;
-    final highlightColor = Theme.of(context).dividerColor.withValues(alpha: 0.3);
+    final theme = Theme.of(context);
+    final baseColor = theme.cardColor;
+    final highlightColor = theme.dividerColor.withValues(alpha: 0.3);
 
     if (isDesktop) {
       return ListView.separated(
-        padding: EdgeInsets.all(context.paddingSizeDefault),
+        padding: EdgeInsets.symmetric(vertical: context.paddingSizeDefault),
         itemCount: 8,
         separatorBuilder: (_, __) => SizedBox(height: context.paddingSizeSmall),
         itemBuilder: (_, __) => Shimmer.fromColors(
@@ -358,7 +372,7 @@ class _ProductShimmerList extends StatelessWidget {
 
     final crossAxisCount = isTablet ? 2 : 1;
     return GridView.builder(
-      padding: EdgeInsets.all(context.paddingSizeDefault),
+      padding: EdgeInsets.symmetric(vertical: context.paddingSizeDefault),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
         childAspectRatio: crossAxisCount == 1 ? 3.2 : 0.85,
@@ -397,7 +411,8 @@ class _DesktopProductTable extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<_DesktopProductTable> createState() => _DesktopProductTableState();
+  ConsumerState<_DesktopProductTable> createState() =>
+      _DesktopProductTableState();
 }
 
 class _DesktopProductTableState extends ConsumerState<_DesktopProductTable> {
@@ -429,12 +444,12 @@ class _DesktopProductTableState extends ConsumerState<_DesktopProductTable> {
     final theme = Theme.of(context);
     return SingleChildScrollView(
       controller: _scrollController,
-      padding: EdgeInsets.all(context.paddingSizeDefault),
-      child: Card(
-        elevation: 0,
-        shape: RoundedRectangleBorder(
+      padding: EdgeInsets.symmetric(vertical: context.paddingSizeDefault),
+      child: Container(
+        decoration: BoxDecoration(
+          color: theme.cardColor,
           borderRadius: BorderRadius.circular(context.radiusLarge),
-          side: BorderSide(color: theme.dividerColor),
+          border: Border.all(color: theme.dividerColor),
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
@@ -442,21 +457,40 @@ class _DesktopProductTableState extends ConsumerState<_DesktopProductTable> {
             SizedBox(
               width: double.infinity,
               child: DataTable(
-                columnSpacing: 20,
-                headingRowColor: WidgetStateProperty.all(theme.colorScheme.surfaceContainerHighest),
+                columnSpacing: 24,
+                headingRowHeight: 46,
+                dataRowMinHeight: 60,
+                dataRowMaxHeight: 60,
+                headingRowColor: WidgetStateProperty.all(
+                  theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.5,
+                  ),
+                ),
+                headingTextStyle: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                dividerThickness: 0.6,
                 columns: const [
                   DataColumn(label: Text('Product')),
-                  DataColumn(label: Text('Price')),
+                  DataColumn(label: Text('Price'), numeric: true),
                   DataColumn(label: Text('Status')),
-                  DataColumn(label: Text('Sales')),
-                  DataColumn(label: Text('Actions')),
+                  DataColumn(label: Text('Sales'), numeric: true),
+                  DataColumn(label: Text('')),
                 ],
                 rows: widget.products.map((product) {
                   return DataRow(
                     cells: [
                       DataCell(_ProductNameCell(product: product)),
-                      DataCell(Text('\$${product.price.toStringAsFixed(2)}')),
-                      DataCell(_StatusChip(status: product.approvalStatus)),
+                      DataCell(
+                        Text(
+                          '৳${product.price.toStringAsFixed(2)}',
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      DataCell(
+                        StatusChip(status: product.approvalStatus, showDot: false),
+                      ),
                       DataCell(Text('${product.totalSales}')),
                       DataCell(_ProductActionsMenu(product: product)),
                     ],
@@ -466,7 +500,8 @@ class _DesktopProductTableState extends ConsumerState<_DesktopProductTable> {
             ),
             if (widget.isLoadingMore)
               Padding(
-                padding: EdgeInsets.symmetric(vertical: context.paddingSizeDefault),
+                padding:
+                EdgeInsets.symmetric(vertical: context.paddingSizeDefault),
                 child: const SizedBox(
                   height: 20,
                   width: 20,
@@ -486,6 +521,7 @@ class _ProductNameCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -493,18 +529,18 @@ class _ProductNameCell extends StatelessWidget {
           borderRadius: BorderRadius.circular(context.radiusSmall),
           child: CachedNetworkImage(
             imageUrl: product.primaryImage?.url ?? '',
-            width: 40,
-            height: 40,
+            width: 42,
+            height: 42,
             fit: BoxFit.cover,
             placeholder: (_, __) => Container(
-              width: 40,
-              height: 40,
-              color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
+              width: 42,
+              height: 42,
+              color: theme.dividerColor.withValues(alpha: 0.2),
             ),
             errorWidget: (_, __, ___) => Container(
-              width: 40,
-              height: 40,
-              color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
+              width: 42,
+              height: 42,
+              color: theme.dividerColor.withValues(alpha: 0.2),
               child: const Icon(Icons.image_not_supported_outlined, size: 18),
             ),
           ),
@@ -577,12 +613,14 @@ class _ProductGridState extends State<_ProductGrid> {
       controller: _scrollController,
       slivers: [
         SliverPadding(
-          padding: EdgeInsets.all(context.paddingSizeDefault),
+          padding: EdgeInsets.symmetric(vertical: context.paddingSizeDefault),
           sliver: widget.crossAxisCount == 1
               ? SliverList.separated(
             itemCount: widget.products.length,
-            separatorBuilder: (_, __) => SizedBox(height: context.paddingSizeSmall),
-            itemBuilder: (context, index) => _ProductCard(product: widget.products[index]),
+            separatorBuilder: (_, __) =>
+                SizedBox(height: context.paddingSizeSmall),
+            itemBuilder: (context, index) =>
+                _ProductCard(product: widget.products[index]),
           )
               : SliverGrid(
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -592,7 +630,8 @@ class _ProductGridState extends State<_ProductGrid> {
               mainAxisSpacing: context.paddingSizeDefault,
             ),
             delegate: SliverChildBuilderDelegate(
-                  (context, index) => _ProductCard(product: widget.products[index]),
+                  (context, index) =>
+                  _ProductCard(product: widget.products[index]),
               childCount: widget.products.length,
             ),
           ),
@@ -600,7 +639,8 @@ class _ProductGridState extends State<_ProductGrid> {
         if (widget.isLoadingMore)
           SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.symmetric(vertical: context.paddingSizeDefault),
+              padding:
+              EdgeInsets.symmetric(vertical: context.paddingSizeDefault),
               child: const Center(
                 child: SizedBox(
                   height: 20,
@@ -626,12 +666,11 @@ class _ProductCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(context.radiusLarge),
-        side: BorderSide(color: theme.dividerColor),
+        border: Border.all(color: theme.dividerColor),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -648,17 +687,17 @@ class _ProductCard extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(context.radiusDefault),
                 child: CachedNetworkImage(
                   imageUrl: product.primaryImage?.url ?? '',
-                  width: 64,
-                  height: 64,
+                  width: 68,
+                  height: 68,
                   fit: BoxFit.cover,
                   placeholder: (_, __) => Shimmer.fromColors(
                     baseColor: theme.cardColor,
                     highlightColor: theme.dividerColor.withValues(alpha: 0.3),
-                    child: Container(width: 64, height: 64, color: theme.cardColor),
+                    child: Container(width: 68, height: 68, color: theme.cardColor),
                   ),
                   errorWidget: (_, __, ___) => Container(
-                    width: 64,
-                    height: 64,
+                    width: 68,
+                    height: 68,
                     color: theme.dividerColor.withValues(alpha: 0.2),
                     child: const Icon(Icons.image_not_supported_outlined),
                   ),
@@ -670,6 +709,7 @@ class _ProductCard extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
                           child: Text(
@@ -682,22 +722,30 @@ class _ProductCard extends ConsumerWidget {
                             ),
                           ),
                         ),
-                        _StatusChip(status: product.approvalStatus),
                         _ProductActionsMenu(product: product, compact: true),
                       ],
                     ),
                     SizedBox(height: context.paddingSizeExtraSmall),
                     Text(
-                      '\$${product.price.toStringAsFixed(2)}',
+                      '৳${product.price.toStringAsFixed(2)}',
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
                         color: theme.colorScheme.primary,
                       ),
                     ),
                     SizedBox(height: context.paddingSizeExtraSmall),
-                    Text(
-                      '${product.totalSales} sold',
-                      style: TextStyle(fontSize: context.fontSizeSmall, color: theme.hintColor),
+                    Row(
+                      children: [
+                        StatusChip(status: product.approvalStatus, showDot: false),
+                        const Spacer(),
+                        Text(
+                          '${product.totalSales} sold',
+                          style: TextStyle(
+                            fontSize: context.fontSizeSmall,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -705,41 +753,6 @@ class _ProductCard extends ConsumerWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-// ================================
-// Status chip (shared)
-// ================================
-class _StatusChip extends StatelessWidget {
-  final String status;
-  const _StatusChip({required this.status});
-
-  Color _color() {
-    switch (status) {
-      case 'approved':
-        return AppColors.success;
-      case 'pending':
-        return AppColors.warning;
-      default:
-        return AppColors.error;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final color = _color();
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: context.paddingSizeExtraSmall + 2, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(context.radiusSmall),
-      ),
-      child: Text(
-        status.toUpperCase(),
-        style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 10),
       ),
     );
   }
@@ -777,10 +790,12 @@ class _ProductActionsMenu extends ConsumerWidget {
     final otherStatuses = _statusMeta.keys.where((s) => s != currentStatus);
 
     return PopupMenuButton<String>(
-      icon: Icon(Icons.more_vert, size: compact ? 20 : 24),
+      icon: Icon(Icons.more_vert_rounded, size: compact ? 20 : 22),
       padding: EdgeInsets.zero,
       tooltip: 'Actions',
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(context.radiusDefault)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(context.radiusDefault),
+      ),
       onSelected: (value) {
         if (value == 'view') {
           context.pushNamed(
@@ -820,7 +835,8 @@ class _ProductActionsMenu extends ConsumerWidget {
 // ================================
 // Change status action (reason required only when rejecting)
 // ================================
-void _changeStatus(BuildContext context, WidgetRef ref, String productId, String targetStatus) async {
+void _changeStatus(
+    BuildContext context, WidgetRef ref, String productId, String targetStatus) async {
   String? reason;
   if (targetStatus == 'rejected') {
     reason = await showDialog<String>(
@@ -864,7 +880,9 @@ class _RejectionDialogState extends State<_RejectionDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(context.radiusLarge)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(context.radiusLarge),
+      ),
       title: const Text('Reject Product'),
       content: TextField(
         controller: _controller,
@@ -872,7 +890,9 @@ class _RejectionDialogState extends State<_RejectionDialog> {
         onChanged: (v) => setState(() => _isEmpty = v.trim().isEmpty),
         decoration: InputDecoration(
           hintText: 'Reason for rejection',
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(context.radiusDefault)),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(context.radiusDefault),
+          ),
         ),
         maxLines: 3,
       ),
@@ -882,7 +902,8 @@ class _RejectionDialogState extends State<_RejectionDialog> {
           child: const Text('Cancel'),
         ),
         FilledButton(
-          onPressed: _isEmpty ? null : () => Navigator.pop(context, _controller.text.trim()),
+          onPressed:
+          _isEmpty ? null : () => Navigator.pop(context, _controller.text.trim()),
           style: FilledButton.styleFrom(backgroundColor: AppColors.error),
           child: const Text('Reject'),
         ),

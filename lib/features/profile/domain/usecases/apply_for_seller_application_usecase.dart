@@ -1,21 +1,13 @@
-import 'package:ebazarx/features/profile/data/datasources/user_remote_data_source.dart';
+
 import 'package:ebazarx/features/profile/domain/entities/seller_application_entity.dart';
-import 'package:ebazarx/features/profile/domain/entities/user_profile_entity.dart';
 import 'package:ebazarx/features/profile/domain/repositories/user_profile_repository.dart';
 
-class UserRepositoryImpl implements UserRepository {
-  final UserRemoteDataSource _remoteDataSource;
+class ApplyForSellerUseCase {
+  final UserRepository _repository;
 
-  UserRepositoryImpl(this._remoteDataSource);
+  ApplyForSellerUseCase(this._repository);
 
-  @override
-  Future<UserProfile> getMyProfile() async {
-    final model = await _remoteDataSource.getMyProfile();
-    return model.toEntity();
-  }
-
-  @override
-  Future<SellerApplicationEntity> applyForSeller({
+  Future<SellerApplicationEntity> call({
     required String shopName,
     required String shopSlug,
     String? description,
@@ -30,8 +22,8 @@ class UserRepositoryImpl implements UserRepository {
     String? tradeLicense,
     String? nid,
     String? tin,
-  }) async {
-    final model = await _remoteDataSource.applyForSeller(
+  }) {
+    return _repository.applyForSeller(
       shopName: shopName,
       shopSlug: shopSlug,
       description: description,
@@ -47,7 +39,5 @@ class UserRepositoryImpl implements UserRepository {
       nid: nid,
       tin: tin,
     );
-
-    return model.toEntity();
   }
 }

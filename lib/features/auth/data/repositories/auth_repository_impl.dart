@@ -11,8 +11,12 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Map<String, dynamic>> register({required String fullName, required String email, required String phone, required String password}) async {
-    return _authRemoteDataSource.register(fullName: fullName, email: email, phone: phone, password: password);
+  Future<Map<String, dynamic>> register({required String fullName, required String email, required String phone, required String password, String? profileImage,required String otp}) async {
+    return _authRemoteDataSource.register(profileImage: profileImage, fullName: fullName, email: email, phone: phone, password: password,otp: otp);
+  }
+  @override
+  Future<Map<String, dynamic>> request_registration_otp({required String fullName, required String email, required String phone, required String password, String? profileImage}) async {
+    return _authRemoteDataSource.request_registration_otp(profileImage: profileImage, fullName: fullName, email: email, phone: phone, password: password);
   }
 
   @override

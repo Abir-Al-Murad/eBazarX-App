@@ -24,7 +24,14 @@ class AuthRemoteDataSource {
     }
   }
 
-  Future<Map<String, dynamic>> register({required String fullName, required String email,required String phone, required String password}) async {
+  Future<Map<String, dynamic>> register({
+    required String fullName,
+    required String email,
+    required String phone,
+    required String password,
+    required String otp,
+    String? profileImage,
+  }) async {
     final response = await _apiClient.post(
       '/auth/register',
       data: {
@@ -32,6 +39,8 @@ class AuthRemoteDataSource {
         'email': email,
         'phone': phone,
         'password': password,
+        "otp": otp,
+        if (profileImage != null) 'profile_image': profileImage,
       },
     );
 
@@ -39,6 +48,31 @@ class AuthRemoteDataSource {
       return response.body;
     } else {
       throw response.failure ?? Exception(response.errorMessage ?? 'Failed to register');
+    }
+  }
+
+  Future<Map<String, dynamic>> request_registration_otp({
+    required String fullName,
+    required String email,
+    required String phone,
+    required String password,
+    String? profileImage,
+  }) async {
+    final response = await _apiClient.post(
+      '/auth/request-registration-otp',
+      data: {
+        'full_name': fullName,
+        'email': email,
+        'phone': phone,
+        'password': password,
+        if (profileImage != null) 'profile_image': profileImage,
+      },
+    );
+
+    if (response.isSuccess) {
+      return response.body;
+    } else {
+      throw response.failure ?? Exception(response.errorMessage ?? 'Failed to send registration OTP');
     }
   }
 

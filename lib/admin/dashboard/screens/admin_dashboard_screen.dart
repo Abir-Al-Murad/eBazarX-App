@@ -3,6 +3,7 @@ import 'package:ebazarx/admin/dashboard/widgets/recent_orders_card.dart';
 import 'package:ebazarx/admin/dashboard/widgets/revenue_card.dart';
 import 'package:ebazarx/admin/dashboard/widgets/top_products_card.dart';
 import 'package:ebazarx/admin/dashboard/widgets/top_seller_card.dart';
+import 'package:ebazarx/common/widgets/desktop_header.dart';
 import 'package:ebazarx/common/widgets/error_view.dart';
 import 'package:ebazarx/common/widgets/page_loading_container.dart';
 import 'package:ebazarx/common/widgets/section_tile.dart';
@@ -60,7 +61,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const _DashboardHeader(),
+              const DesktopHeader(
+                title: 'Admin Dashboard',
+                subtitle: 'Overview of your eBazarX marketplace',
+              ),
               SizedBox(height: context.paddingSizeExtraLarge),
               _StatsGrid(
                 totalOrders: dashboard?.totalOrders ?? 0,
@@ -123,56 +127,6 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
   }
 }
 
-// ============================================================
-// HEADER
-// ============================================================
-
-class _DashboardHeader extends StatelessWidget {
-  const _DashboardHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Admin Dashboard',
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  fontSize: context.fontSizeExtraLarge + 4,
-                ),
-              ),
-              SizedBox(height: 4),
-              Text(
-                'Overview of your eBazarX marketplace',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Container(
-          padding: EdgeInsets.all(context.paddingSizeSmall),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withValues(alpha: 0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            Icons.admin_panel_settings_rounded,
-            color: theme.colorScheme.primary,
-            size: 22,
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 // ============================================================
 // STATS GRID
