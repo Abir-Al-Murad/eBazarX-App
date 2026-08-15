@@ -1,11 +1,9 @@
 // lib/features/profile/presentation/screens/apply_seller_screen.dart
-import 'package:ebazarx/common/widgets/error_view.dart';
-import 'package:ebazarx/common/widgets/page_loading_container.dart';
+import 'package:ebazarx/common/widgets/loading_state.dart';
 import 'package:ebazarx/core/utils/app_snackbar.dart';
 import 'package:ebazarx/core/utils/responsive.dart';
 import 'package:ebazarx/features/profile/presentation/providers/profile_provider.dart';
-import 'package:ebazarx/features/upload/models/upload_image_item.dart';
-import 'package:ebazarx/features/upload/presentation/widgets/reusable_image_uploader.dart';
+import 'package:ebazarx/features/upload/presentation/widgets/single_image_upload_field.dart';
 import 'package:ebazarx/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -35,10 +33,6 @@ class _ApplySellerScreenState extends ConsumerState<ApplySellerScreen> {
 
   String _selectedCountry = 'Bangladesh';
 
-  // Two SEPARATE uploaders — logo (square, shows in listings/avatars)
-  // and cover (wide banner, shows atop the shop page). These were
-  // previously two unlabeled ReusableImageUploader widgets stacked with
-  // no indication of which was which.
   String? _logoUrl;
   String? _coverUrl;
 
@@ -56,14 +50,6 @@ class _ApplySellerScreenState extends ConsumerState<ApplySellerScreen> {
     _nidController.dispose();
     _tinController.dispose();
     super.dispose();
-  }
-
-  void _onLogoChanged(List<UploadImageItem> images) {
-    setState(() => _logoUrl = images.isNotEmpty ? images.first.url : null);
-  }
-
-  void _onCoverChanged(List<UploadImageItem> images) {
-    setState(() => _coverUrl = images.isNotEmpty ? images.first.url : null);
   }
 
   Future<void> _submit() async {
@@ -94,12 +80,12 @@ class _ApplySellerScreenState extends ConsumerState<ApplySellerScreen> {
       tin: _tinController.text.trim().isEmpty ? null : _tinController.text.trim(),
     );
 
-    if (!mounted) return;
+    // if (!mounted) return;
 
-    final state = ref.read(applyNotifierProvider);
-    if (state.application != null && !state.isApplying) {
-      _showSuccessDialog();
-    }
+    // final state = ref.read(applyNotifierProvider);
+    // if (state.application != null && !state.isApplying) {
+    //   _showSuccessDialog();
+    // }
   }
 
   void _showSuccessDialog() {
@@ -141,19 +127,35 @@ class _ApplySellerScreenState extends ConsumerState<ApplySellerScreen> {
     final state = ref.watch(applyNotifierProvider);
     final theme = Theme.of(context);
 
-    if (state.isApplying) {
-      return const Scaffold(
-        body: LoadingContainer(message: 'Submitting application...'),
-      );
-    }
+    ref.listen(applyNotifierProvider, (previous, next) {
+      // Started
+      if (next.isApplying && !(previous?.isApplying ?? false)) {
+        LoadingState.show(context);
+      }
 
-    if (state.failure != null && state.application == null) {
-      return Scaffold(
-        backgroundColor: theme.colorScheme.surface,
-        appBar: AppBar(title: const Text('Apply as Seller')),
-        body: ErrorView(failure: state.failure!, onRetry: _submit),
-      );
-    }
+      // Finished
+      if (!next.isApplying && (previous?.isApplying ?? false)) {
+        LoadingState.hide();
+      }
+
+      // Failed
+      if (next.failure != null &&
+          next.failure != previous?.failure) {
+        AppSnackBar.error(
+          context: context,
+          next.failure!.message,
+        );
+        return;
+      }
+
+      // Success
+      if (next.application != null &&
+          next.failure == null &&
+          !next.isApplying &&
+          (previous?.isApplying ?? false)) {
+        _showSuccessDialog();
+      }
+    });
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
@@ -219,6 +221,9 @@ class _ApplySellerScreenState extends ConsumerState<ApplySellerScreen> {
                     ),
                     SizedBox(height: context.paddingSizeDefault),
 
+                    // ============================================================
+                    // Shop Images – using the new SingleImageUploadField
+                    // ============================================================
                     _FormSectionCard(
                       title: 'Shop Images',
                       subtitle: 'Logo appears on your shop card and listings; '
@@ -226,15 +231,19 @@ class _ApplySellerScreenState extends ConsumerState<ApplySellerScreen> {
                       child: LayoutBuilder(
                         builder: (context, constraints) {
                           final isWide = constraints.maxWidth > 500;
-                          final logoField = _ImageUploadField(
+                          final logoField = SingleImageUploadField(
                             label: 'Shop Logo *',
                             hint: 'Square image, ideally 400×400px',
-                            onChanged: _onLogoChanged,
+                            aspectRatio: 1,
+                            onUploaded: (url) => setState(() => _logoUrl = url),
+                            initialUrl: _logoUrl, // pass existing URL if editing
                           );
-                          final coverField = _ImageUploadField(
+                          final coverField = SingleImageUploadField(
                             label: 'Cover Image (optional)',
                             hint: 'Wide banner, ideally 1200×400px',
-                            onChanged: _onCoverChanged,
+                            aspectRatio: 3,
+                            onUploaded: (url) => setState(() => _coverUrl = url),
+                            initialUrl: _coverUrl,
                           );
 
                           if (isWide) {
@@ -331,7 +340,8 @@ class _ApplySellerScreenState extends ConsumerState<ApplySellerScreen> {
                               if (value != null) setState(() => _selectedCountry = value);
                             },
                             decoration: const InputDecoration(labelText: 'Country *'),
-                            validator: (v) => (v == null || v.isEmpty) ? 'Country is required' : null,
+                            validator: (v) =>
+                            (v == null || v.isEmpty) ? 'Country is required' : null,
                           ),
                         ],
                       ),
@@ -404,47 +414,9 @@ class _ApplySellerScreenState extends ConsumerState<ApplySellerScreen> {
   }
 }
 
-// ================================
-// Labeled image upload field — makes it explicit which uploader is
-// which, unlike the original two unlabeled uploaders stacked together.
-// ================================
-class _ImageUploadField extends StatelessWidget {
-  const _ImageUploadField({required this.label, required this.hint, required this.onChanged});
-
-  final String label;
-  final String hint;
-  final ValueChanged<List<UploadImageItem>> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
-        ),
-        SizedBox(height: 2),
-        Text(
-          hint,
-          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-        ),
-        SizedBox(height: context.paddingSizeSmall),
-        ReusableImageUploader(
-          initialImages: const [],
-          maxImages: 1,
-          onChanged: onChanged,
-        ),
-      ],
-    );
-  }
-}
-
-// ================================
+// ============================================================
 // Shared section card wrapper (same pattern as admin forms)
-// ================================
+// ============================================================
 class _FormSectionCard extends StatelessWidget {
   const _FormSectionCard({required this.title, required this.child, this.subtitle});
 

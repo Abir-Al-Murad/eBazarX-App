@@ -23,8 +23,8 @@ class ApiClient {
   ApiClient({
     required this.ref,
     Dio? dio,
-    // this.baseUrl = "http://192.168.10.128:8000/api/v1"
-    this.baseUrl = "https://ebazarx-api.onrender.com/api/v1"
+    this.baseUrl = "http://192.168.10.128:8000/api/v1"
+    // this.baseUrl = "https://ebazarx-api.onrender.com/api/v1"
   }) : _dio = dio ??
       Dio(
         BaseOptions(

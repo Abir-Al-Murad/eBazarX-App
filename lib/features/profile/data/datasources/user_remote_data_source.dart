@@ -36,7 +36,7 @@ class UserRemoteDataSource {
     String? tin,
   }) async {
     final response = await _apiClient.post(
-      '/sellers/apply/',
+      '/seller/apply/',
       data: {
         'shop_name': shopName,
         'shop_slug': shopSlug,

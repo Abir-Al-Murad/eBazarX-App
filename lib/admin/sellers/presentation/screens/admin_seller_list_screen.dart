@@ -8,6 +8,7 @@ import 'package:ebazarx/common/widgets/empty_state.dart';
 import 'package:ebazarx/common/widgets/page_loading_container.dart';
 import 'package:ebazarx/common/widgets/status_chip.dart';
 import 'package:ebazarx/core/utils/responsive.dart';
+import 'package:ebazarx/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -209,8 +210,8 @@ class _DesktopSellerTable extends StatelessWidget {
         child: DataTable(
           columnSpacing: 24,
           headingRowHeight: 46,
-          dataRowMinHeight: 64,
-          dataRowMaxHeight: 64,
+          dataRowMinHeight: 68,
+          dataRowMaxHeight: 68,
           headingRowColor: WidgetStateProperty.all(
             theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
           ),
@@ -222,6 +223,11 @@ class _DesktopSellerTable extends StatelessWidget {
           columns: const [
             DataColumn(label: Text('Shop')),
             DataColumn(label: Text('Contact')),
+            DataColumn(label: Text('Location')),
+            DataColumn(label: Text('Rating')),
+            DataColumn(label: Text('Products')),
+            DataColumn(label: Text('Orders')),
+            DataColumn(label: Text('Commission')),
             DataColumn(label: Text('Status')),
             DataColumn(label: Text('')),
           ],
@@ -231,6 +237,11 @@ class _DesktopSellerTable extends StatelessWidget {
               cells: [
                 DataCell(_SellerNameCell(seller: seller)),
                 DataCell(_SellerContactCell(seller: seller)),
+                DataCell(_SellerLocationCell(seller: seller)),
+                DataCell(_RatingPill(rating: seller.averageRating)),
+                DataCell(Text('${seller.totalProducts}')),
+                DataCell(Text('${seller.totalOrders}')),
+                DataCell(Text('${seller.commissionRate.toStringAsFixed(1)}%')),
                 DataCell(StatusChip(status: seller.status, showDot: false)),
                 DataCell(Icon(
                   Icons.chevron_right_rounded,
@@ -259,7 +270,7 @@ class _SellerNameCell extends StatelessWidget {
         _SellerAvatar(seller: seller, size: 40),
         SizedBox(width: context.paddingSizeSmall),
         ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 220),
+          constraints: const BoxConstraints(maxWidth: 200),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -294,22 +305,79 @@ class _SellerContactCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final email = seller.userEmail ?? seller.email;
+    final phone = seller.userPhone ?? seller.phone;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 180),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (email != null)
+            Text(email, maxLines: 1, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodySmall),
+          if (phone != null)
+            Text(
+              phone,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          if (email == null && phone == null)
+            Text('—', style: theme.textTheme.bodySmall),
+        ],
+      ),
+    );
+  }
+}
+
+class _SellerLocationCell extends StatelessWidget {
+  const _SellerLocationCell({required this.seller});
+
+  final SellerEntity seller;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final parts = [seller.city, seller.district].whereType<String>().where((e) => e.isNotEmpty);
+    final text = parts.isEmpty ? '—' : parts.join(', ');
+
+    return Text(
+      text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+    );
+  }
+}
+
+// ================================
+// Rating pill (shared)
+// ================================
+class _RatingPill extends StatelessWidget {
+  const _RatingPill({required this.rating});
+
+  final double rating;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    if (rating <= 0) {
+      return Text('—', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant));
+    }
+
+    return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (seller.userEmail != null)
-          Text(seller.userEmail!, style: theme.textTheme.bodySmall),
-        if (seller.userPhone != null)
-          Text(
-            seller.userPhone!,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        if (seller.userEmail == null && seller.userPhone == null)
-          Text('—', style: theme.textTheme.bodySmall),
+        Icon(Icons.star_rounded, size: 15, color: AppColors.warning),
+        const SizedBox(width: 2),
+        Text(
+          rating.toStringAsFixed(1),
+          style: TextStyle(fontSize: context.fontSizeSmall, fontWeight: FontWeight.w600),
+        ),
       ],
     );
   }
@@ -347,7 +415,7 @@ class _SellerGrid extends StatelessWidget {
               : SliverGrid(
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: crossAxisCount,
-              childAspectRatio: 2.4,
+              childAspectRatio: 2.0,
               crossAxisSpacing: context.paddingSizeDefault,
               mainAxisSpacing: context.paddingSizeDefault,
             ),
@@ -377,6 +445,7 @@ class _SellerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final location = [seller.city, seller.district].whereType<String>().where((e) => e.isNotEmpty).join(', ');
 
     return Container(
       decoration: BoxDecoration(
@@ -414,7 +483,7 @@ class _SellerCard extends StatelessWidget {
                         StatusChip(status: seller.status, showDot: false),
                       ],
                     ),
-                    SizedBox(height: 2),
+                    const SizedBox(height: 2),
                     Text(
                       seller.shopSlug,
                       maxLines: 1,
@@ -423,13 +492,37 @@ class _SellerCard extends StatelessWidget {
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
-                    if (seller.userEmail != null) ...[
+                    SizedBox(height: context.paddingSizeExtraSmall),
+                    Row(
+                      children: [
+                        _RatingPill(rating: seller.averageRating),
+                        SizedBox(width: context.paddingSizeSmall),
+                        Icon(Icons.inventory_2_outlined, size: 13, color: theme.colorScheme.onSurfaceVariant),
+                        const SizedBox(width: 2),
+                        Text('${seller.totalProducts}', style: theme.textTheme.bodySmall),
+                        SizedBox(width: context.paddingSizeSmall),
+                        Icon(Icons.receipt_long_outlined, size: 13, color: theme.colorScheme.onSurfaceVariant),
+                        const SizedBox(width: 2),
+                        Text('${seller.totalOrders}', style: theme.textTheme.bodySmall),
+                      ],
+                    ),
+                    if (location.isNotEmpty) ...[
                       SizedBox(height: context.paddingSizeExtraSmall),
-                      Text(
-                        seller.userEmail!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall,
+                      Row(
+                        children: [
+                          Icon(Icons.location_on_outlined, size: 13, color: theme.colorScheme.onSurfaceVariant),
+                          const SizedBox(width: 2),
+                          Expanded(
+                            child: Text(
+                              location,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ],
@@ -460,7 +553,7 @@ class _SellerAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final logoUrl = seller.userId;
+    final logoUrl = seller.logo;
 
     if (logoUrl != null && logoUrl.isNotEmpty) {
       return ClipRRect(
