@@ -57,9 +57,9 @@ class _CartScreenState extends ConsumerState<CartScreen> {
               label: 'Log in to view your cart.',
               icon: Icons.shopping_cart_outlined,
             )
-          : state.failure != null
+          : state.cartListFailure != null
           ? CartErrorWidget(
-              error: state.failure!.message,
+              error: state.cartListFailure!.message,
               onRetry: () => ref.read(cartNotifierProvider.notifier).refresh(),
             )
           : state.cart == null || state.cart!.items.isEmpty

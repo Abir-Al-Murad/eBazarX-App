@@ -1,3 +1,4 @@
+import 'package:ebazarx/features/auth/presentation/providers/auth_provider.dart';
 import 'package:ebazarx/features/banner/presentation/providers/banner_providers.dart';
 import 'package:ebazarx/features/cart/presentation/providers/cart_providers.dart';
 import 'package:ebazarx/features/category/presentation/providers/category_providers.dart';
@@ -19,6 +20,7 @@ Future<void> loadNecessaryData(WidgetRef ref) async {
 
   await Future.wait([
     // safe(ref.read(profileNotifierProvider.notifier).fetchProfile()),
+    safe(ref.read(registerFcmTokenUseCaseProvider).call()),
     safe(ref.read(publicBannerListNotifierProvider.notifier).fetchBanners()),
     safe(ref.read(categoryListNotifierProvider.notifier).fetchCategories(refresh: true)),
     safe(ref.read(flashSaleListNotifierProvider.notifier).fetchFlashSales()),

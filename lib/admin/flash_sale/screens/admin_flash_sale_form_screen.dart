@@ -48,9 +48,9 @@ class _AdminFlashSaleFormScreenState
       _isActive = flashSale.isActive;
       _productEntries = flashSale.products
           .map((p) => {
-        'productId': p.productId,
-        'discountPrice': p.discountPrice,
-        'stockLimit': p.stockLimit,
+        'product_id': p.productId,
+        'discount_price': p.discountPrice,
+        'stock_limit': p.stockLimit,
       })
           .toList();
     }
@@ -70,9 +70,9 @@ class _AdminFlashSaleFormScreenState
   void _addProductEntry() {
     setState(() {
       _productEntries.add({
-        'productId': '',
-        'discountPrice': 0.0,
-        'stockLimit': 0,
+        'product_id': '',
+        'discount_price': 0.0,
+        'stock_limit': 0,
       });
     });
   }

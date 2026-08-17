@@ -5,6 +5,7 @@ import 'package:ebazarx/app/assets_path.dart';
 import 'package:ebazarx/common/utils/user_based_login.dart';
 import 'package:ebazarx/core/services/auth_storage.dart';
 import 'package:ebazarx/core/utils/responsive.dart';
+import 'package:ebazarx/features/auth/presentation/providers/auth_provider.dart';
 import 'package:ebazarx/features/profile/presentation/providers/profile_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -98,6 +99,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     final destination = results[1] as _SplashDestination;
     switch (destination) {
       case _SplashDestination.userBased:
+        await ref.read(registerFcmTokenUseCaseProvider).call();
         await userBasedNavigation(ref, context);
         break;
       case _SplashDestination.widgetTree:

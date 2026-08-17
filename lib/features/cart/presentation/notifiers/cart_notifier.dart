@@ -39,6 +39,7 @@ class CartNotifier extends StateNotifier<CartState> {
       state = state.copyWith(
         isLoading: false,
         cart: null,
+        clearFailure: true,
       );
       return;
     }
@@ -66,7 +67,7 @@ class CartNotifier extends StateNotifier<CartState> {
     } on Failure catch (e) {
       state = state.copyWith(
         isLoading: false,
-        failure: e,
+        cartListFailure: e,
       );
     } catch (e, s) {
       debugPrint(e.toString());
@@ -74,7 +75,7 @@ class CartNotifier extends StateNotifier<CartState> {
 
       state = state.copyWith(
         isLoading: false,
-        failure: UnknownFailure(e.toString()),
+        cartListFailure: UnknownFailure(e.toString()),
       );
     }
   }

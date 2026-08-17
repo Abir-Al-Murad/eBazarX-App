@@ -8,6 +8,7 @@ class CartState extends Equatable {
   final bool isUpdating;
   final bool isClearing;
   final Failure? failure;
+  final Failure? cartListFailure;
   final Set<String> updatingItemIds;
   final Set<String> removingItemIds;
 
@@ -17,6 +18,7 @@ class CartState extends Equatable {
     this.isUpdating = false,
     this.isClearing = false,
     this.failure,
+    this.cartListFailure,
     this.updatingItemIds = const {},
     this.removingItemIds = const {},
   });
@@ -27,6 +29,7 @@ class CartState extends Equatable {
     bool? isUpdating,
     bool? isClearing,
     Failure? failure,
+    Failure? cartListFailure,
     bool clearFailure = false,
     Set<String>? updatingItemIds,
     Set<String>? removingItemIds,
@@ -37,6 +40,7 @@ class CartState extends Equatable {
       isUpdating: isUpdating ?? this.isUpdating,
       isClearing: isClearing ?? this.isClearing,
       failure: clearFailure ? null : (failure ?? this.failure),
+      cartListFailure: clearFailure ? null : cartListFailure ?? this.cartListFailure,
       updatingItemIds: updatingItemIds ?? this.updatingItemIds,
       removingItemIds: removingItemIds ?? this.removingItemIds,
     );

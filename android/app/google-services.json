@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1029615766156",
+    "project_id": "ebazar-7761d",
+    "storage_bucket": "ebazar-7761d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1029615766156:android:66b34356208c29f56509a9",
+        "android_client_info": {
+          "package_name": "com.ebazarz.murad.ebazarx"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCp52vKjfB8rocpGgrrZzUtEvosg1pfKZA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -23,4 +23,9 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<void> logout({required String refreshToken}) async {
     return _authRemoteDataSource.logout(refreshToken: refreshToken);
   }
+
+  @override
+  Future<void> registerFCMToken() async {
+    return _authRemoteDataSource.registerFCMToken();
+  }
 }

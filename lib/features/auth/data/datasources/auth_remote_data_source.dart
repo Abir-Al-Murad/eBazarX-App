@@ -1,5 +1,9 @@
+import 'dart:io';
+
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:ebazarx/core/network/api_client.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class AuthRemoteDataSource {
   final ApiClient _apiClient;
@@ -73,6 +77,42 @@ class AuthRemoteDataSource {
       return response.body;
     } else {
       throw response.failure ?? Exception(response.errorMessage ?? 'Failed to send registration OTP');
+    }
+  }
+
+  Future<void> registerFCMToken() async {
+    if (!Platform.isAndroid && !Platform.isIOS) {
+      return;
+    }
+
+    try {
+      final fcm = FirebaseMessaging.instance;
+      final deviceInfo = DeviceInfoPlugin();
+
+      final token = await fcm.getToken();
+
+      if (token == null) return;
+
+      String? deviceName;
+
+      if (Platform.isAndroid) {
+        final info = await deviceInfo.androidInfo;
+        deviceName = info.model;
+      } else if (Platform.isIOS) {
+        final info = await deviceInfo.iosInfo;
+        deviceName = info.name;
+      }
+
+      await _apiClient.post(
+        '/notifications/devices',
+        data: {
+          'token': token,
+          'platform': Platform.isAndroid ? 'android' : 'ios',
+          'device_name': deviceName,
+        },
+      );
+    } catch (e) {
+      print('FCM registration failed: $e');
     }
   }
 
